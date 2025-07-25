@@ -10,6 +10,6 @@ import java.util.Optional;
 @Repository
 public interface PlanRepository extends JpaRepository<Plan, Integer> {
 
-    Optional<Plan> findByNameIgnoreCase(String name);
+    Optional<Plan> findByNamePlanIgnoreCase(String namePlan);
     List<Plan> findByIsActive(boolean isActive);
 }

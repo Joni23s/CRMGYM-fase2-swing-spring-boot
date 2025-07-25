@@ -23,6 +23,12 @@ public class Client {
 
     @Column(name = "last_name",nullable = false)
     private String lastName;
+    
+    @Column(name = "email",nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "phone_number", nullable = false)
+    private String phoneNumber;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
@@ -37,10 +43,12 @@ public class Client {
     private List<HistoricalPlan> historicalPlans;
 
     // Constructor útil para crear clientes sin historial, pero con plan
-    public Client(Integer documentId, String name, String lastName, Boolean isActive, Plan currentPlan) {
+    public Client(Integer documentId, String name, String lastName, String email, String phoneNumber, Boolean isActive, Plan currentPlan) {
         this.documentId = documentId;
         this.name = name;
         this.lastName = lastName;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
         this.isActive = isActive;
         this.currentPlan = currentPlan;
     }
