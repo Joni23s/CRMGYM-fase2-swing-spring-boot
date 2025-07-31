@@ -10,7 +10,7 @@ import java.util.List;
 @Component
 public class ClientMapper {
 
-    public ClientDTO toDTO(Client client) {
+    public static ClientDTO toDTO(Client client) {
         String planName = (client.getCurrentPlan() != null)
                 ? client.getCurrentPlan().getNamePlan()
                 : "Sin plan";

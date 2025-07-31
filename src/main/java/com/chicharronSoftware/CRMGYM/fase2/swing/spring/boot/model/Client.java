@@ -33,7 +33,7 @@ public class Client {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "current_plan_id")
     private Plan currentPlan;
 
