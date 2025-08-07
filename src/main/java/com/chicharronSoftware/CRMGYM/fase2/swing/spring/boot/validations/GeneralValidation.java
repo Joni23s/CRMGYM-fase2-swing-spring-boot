@@ -8,18 +8,30 @@ import java.util.Scanner;
 public class GeneralValidation {
     private final Scanner console = new Scanner(System.in);
 
-    public int getIntInput(String message) {
+    public boolean getIntInput(String number) {
         while (true) {
-            System.out.print(message);
 
             try {
-                return Integer.parseInt(console.nextLine().trim());
+                return true;
 
             } catch (NumberFormatException e) {
-                System.out.println("Error: Ingresa un número válido.");
+                return false;
             }
         }
     }
+
+//    public int getIntInput(String message) {
+//        while (true) {
+//            System.out.print(message);
+//
+//            try {
+//                return Integer.parseInt(console.nextLine().trim());
+//
+//            } catch (NumberFormatException e) {
+//                System.out.println("Error: Ingresa un número válido.");
+//            }
+//        }
+//    }
 
     public int getIntInput(String message, int currentValue) {
         while (true) {

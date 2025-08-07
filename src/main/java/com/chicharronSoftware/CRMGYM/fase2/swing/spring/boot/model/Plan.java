@@ -53,4 +53,13 @@ public class Plan {
         this.notes = notes;
         this.isActive = isActive;
     }
+
+    public Plan(String namePlan, Integer daysEnabled, Integer hoursEnabled, BigDecimal value, String notes, Boolean isActive) {
+        this.namePlan = namePlan;
+        this.daysEnabled = daysEnabled;
+        this.hoursEnabled = hoursEnabled;
+        this.value = value;
+        this.notes = notes;
+        this.isActive = isActive;
+    }
 }

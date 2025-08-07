@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PlanMapper {
 
-    public PlanDTO toDTO(Plan plan) {
+    public static PlanDTO toDTO(Plan plan) {
         return new PlanDTO(
                 plan.getIdPlan(),
                 plan.getNamePlan(),
