@@ -36,7 +36,6 @@ public class PlansPanel extends javax.swing.JPanel {
         this.clientService = clientService;
 
         initComponents();
-        this.defaultBorder = txtName.getBorder();
         initPlanTable();
         initPlanPanel();
     }
@@ -52,10 +51,11 @@ public class PlansPanel extends javax.swing.JPanel {
         tableModelPlans.setColumnIdentifiers(new Object[]{
                 "Id", "Nombre", "Días habíles", "Horas habíles", "Valor", "Notas", "Estado"
         });
-        loadPlansToTable(planService.getAllPlans());
+        loadPlansToTable(planService.getAllPlansDTO());
     }
 
     private void initPlanPanel() {
+        this.defaultBorder = txtName.getBorder();
         resetForm(); // Limpia los campos del formulario
     }
 
@@ -63,7 +63,7 @@ public class PlansPanel extends javax.swing.JPanel {
      * Carga la lista de clientes en la tabla.
      */
     private void loadPlansToTable(List<PlanDTO> plans) {
-        //Clientes desde el service
+        //Planes desde el service
         tableModelPlans.setRowCount(0);
 
         for (PlanDTO dto : plans) {
@@ -93,6 +93,11 @@ public class PlansPanel extends javax.swing.JPanel {
         spinnerDays.setValue(0);
         titleCharge.setText("Nuevo Plan");
         isEditMode = false;
+        txtANotes.setBorder(defaultBorder);
+        txtCost.setBorder(defaultBorder);
+        txtName.setBorder(defaultBorder);
+        spinnerDays.setBorder(defaultBorder);
+        spinnerHours.setBorder(defaultBorder);
     }
 
     /**
@@ -430,45 +435,29 @@ public class PlansPanel extends javax.swing.JPanel {
         }
 
         int id = Integer.parseInt(tableListPlans.getValueAt(filaSelected, 0).toString());
-        Optional<Plan> planOpt = planService.findById(id);
 
-        if (planOpt.isPresent()) {
-            Plan plan = planOpt.get();
+        // delegamos toda la lógica al service
+        planService.changeStatusWithClients(id, status);
 
-        if  (status) {
+        JOptionPane.showMessageDialog(this,
+                "Estado actualizado correctamente.",
+                "Éxito",
+                JOptionPane.INFORMATION_MESSAGE);
 
-                plan.setIsActive(status);
-                planService.save(plan);
-
-                JOptionPane.showMessageDialog(this,
-                        "Estado actualizado correctamente.",
-                        "Éxito",
-                        JOptionPane.INFORMATION_MESSAGE);
-
-                loadPlansToTable(planService.findByIsActiveDTO(status));
-
-        } else {
-            List<Client> clients = clientService.findByCurrentPlan(plan.getNamePlan());
-            clients.forEach(client -> {
-                client.setCurrentPlan(planService.findByNamePlanIgnoreCase("Sin Plan").get());
-                clientService.save(client);
-            });
-            plan.setIsActive(status);
-            planService.save(plan);
-
-            JOptionPane.showMessageDialog(this,
-                    "Estado actualizado correctamente.",
-                    "Éxito",
-                    JOptionPane.INFORMATION_MESSAGE);
-
-            loadPlansToTable(planService.findByIsActiveDTO(status));
-
-        }
-        }
+        loadPlansToTable(planService.findByIsActiveDTO(status));
     }
-    
+
+
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         try {
+            // Validaciones obligatorias
+            if (!isFormValid()) {
+                JOptionPane.showMessageDialog(this,
+                        "Verifique los datos ingresados.",
+                        "Validación fallida",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             String name = txtName.getText().trim();
 
             String costText = txtCost.getText().trim().replace(",",".");
@@ -484,15 +473,6 @@ public class PlansPanel extends javax.swing.JPanel {
             String notes = txtANotes.getText().trim();
             Integer selectedHours = (Integer) spinnerHours.getValue();
             Integer selectedDays = (Integer) spinnerDays.getValue();
-
-            // Validaciones obligatorias
-            if (!isFormValid()) {
-                JOptionPane.showMessageDialog(this,
-                        "Verifique los datos ingresados.",
-                        "Validación fallida",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
 
             if (isEditMode) {
                 Integer id = Integer.parseInt(tableListPlans.getValueAt(tableListPlans.getSelectedRow(), 0).toString());
@@ -529,7 +509,7 @@ public class PlansPanel extends javax.swing.JPanel {
         titleCharge.setText("Nuevo Plan");
         isEditMode = false;
         titleList.setText("Lista de Planes");
-        loadPlansToTable(planService.getAllPlans());
+        loadPlansToTable(planService.getAllPlansDTO());
     }//GEN-LAST:event_btnSaveActionPerformed
 
     /**
@@ -675,7 +655,7 @@ public class PlansPanel extends javax.swing.JPanel {
 
     private void btnAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAllActionPerformed
         titleList.setText("Lista de Planes");
-        loadPlansToTable(planService.getAllPlans());
+        loadPlansToTable(planService.getAllPlansDTO());
     }//GEN-LAST:event_btnAllActionPerformed
 
 

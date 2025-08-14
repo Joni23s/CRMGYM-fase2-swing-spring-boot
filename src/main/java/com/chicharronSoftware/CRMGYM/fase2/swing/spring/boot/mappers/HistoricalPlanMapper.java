@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class HistoricalPlanMapper {
 
-    public HistoricalPlanDTO toDTO(HistoricalPlan historicalPlan) {
+    public static HistoricalPlanDTO toDTO(HistoricalPlan historicalPlan) {
         return new HistoricalPlanDTO(
                 historicalPlan.getIdHistorical(),
                 historicalPlan.getStartDate(),

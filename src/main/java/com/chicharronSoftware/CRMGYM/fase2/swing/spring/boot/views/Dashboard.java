@@ -1,6 +1,8 @@
 
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views;
 
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.HistoricalPlanRepository;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.HistoricalPlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.ClientValidation;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.PlanValidation;
@@ -8,6 +10,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.Client
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.MainPanel;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.PlansPanel;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.HistoricalPanel;
 import java.awt.BorderLayout;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class Dashboard extends javax.swing.JFrame {
     private final ClientService clientService;
     private final PlanService planService;
+    private final HistoricalPlanService historicalPlanService;
 
     @Autowired
     private PlanValidation planValidation;
@@ -29,9 +33,10 @@ public class Dashboard extends javax.swing.JFrame {
 
 
     @Autowired
-    public Dashboard(ClientService clientService, PlanService planService) {
+    public Dashboard(ClientService clientService, PlanService planService, HistoricalPlanService historicalPlanService) {
         this.clientService = clientService;
         this.planService = planService;
+        this.historicalPlanService = historicalPlanService;
         initComponents();
         jLMessage.putClientProperty("FlatLaf.styleClass", "h1");
         jLDay.putClientProperty("FlatLaf.style", "font: 140% $light.font");
@@ -238,7 +243,14 @@ public class Dashboard extends javax.swing.JFrame {
     }//GEN-LAST:event_jBMainActionPerformed
 
     private void jBHistoryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBHistoryActionPerformed
-        // TODO add your handling code here:
+        HistoricalPanel hp = new HistoricalPanel(clientService, planService, historicalPlanService);
+        hp.setSize(750, 585);
+        hp.setLocation(0, 0);
+
+        jPContent.removeAll();
+        jPContent.add(hp, BorderLayout.CENTER);
+        jPContent.revalidate();
+        jPContent.repaint();
     }//GEN-LAST:event_jBHistoryActionPerformed
 
     //Metodo para llamar a menu cliente

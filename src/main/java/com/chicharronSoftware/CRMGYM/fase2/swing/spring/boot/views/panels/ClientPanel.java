@@ -6,6 +6,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.ClientMappe
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Plan;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.utils.PromptSupport;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.ClientValidation;
 import org.springframework.stereotype.Component;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
@@ -18,8 +19,6 @@ import javax.swing.border.Border;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,12 +31,8 @@ public class ClientPanel extends JPanel {
     private final PlanService planService;
     private ClientValidation clientValidation;
     private Border defaultBorder;
-    private Border defaultComboBoxBorder;
     private boolean isEditMode = false;
     private int editingDni = -1;
-    // Constantes de colores para los campos
-    private static final Color COLOR_PLACEHOLDER = Color.GRAY;
-    private static final Color COLOR_INPUT = Color.WHITE;
 
 
     @Autowired
@@ -62,20 +57,13 @@ public class ClientPanel extends JPanel {
         tableModelClients.setColumnIdentifiers(new Object[]{
                 "DNI", "Nombre", "Apellido", "Email", "Teléfono", "Estado", "Plan"
         });
-        loadClientsToTable(clientService.findAllDTO());
-    }
-
-    private void initClientPanelStyle() {
-        defaultBorder = txtDni.getBorder();
-        defaultComboBoxBorder = comboBoxPlan.getBorder();
-        storeDefaultBorder();
-        addFocusListeners();
+        loadClientsToTable(clientService.getAllClientsDTO());
     }
 
     private void initClientPanel() {
+        this.defaultBorder = txtName.getBorder();
         loadPlansToComboBox(); // Llena el combo de planes disponibles desde DB
         resetForm(); // Limpia los campos del formulario
-        initClientPanelStyle(); // Guarda bordes por defecto y agrega listeners de foco
     }
 
     /**
@@ -112,6 +100,23 @@ public class ClientPanel extends JPanel {
                 comboBoxPlan.addItem(plan.toString());
             }
         }
+    }
+
+    private void resetForm() {
+        PromptSupport.setPrompt("Ingrese el DNI *", txtDni);
+        PromptSupport.setPrompt("Ingrese el nombre *", txtName);
+        PromptSupport.setPrompt("Ingrese el apellido *", txtLastName);
+        PromptSupport.setPrompt("Ingrese el mail", txtMail);
+        PromptSupport.setPrompt("Ingrese el celular", txtPhone);
+        comboBoxPlan.setSelectedIndex(0);
+        titleCharge.setText("Nuevo Cliente");
+        isEditMode = false;
+        txtDni.setBorder(defaultBorder);
+        txtName.setBorder(defaultBorder);
+        txtLastName.setBorder(defaultBorder);
+        txtMail.setBorder(defaultBorder);
+        txtPhone.setBorder(defaultBorder);
+        comboBoxPlan.setBorder(defaultBorder);
     }
 
     /**
@@ -504,7 +509,7 @@ public class ClientPanel extends JPanel {
             comboBox.setBorder(BorderFactory.createLineBorder(Color.RED));
             return false;
         } else {
-            comboBox.setBorder(defaultComboBoxBorder);
+            comboBox.setBorder(defaultBorder);
             return true;
         }
     }
@@ -578,7 +583,7 @@ public class ClientPanel extends JPanel {
         editingDni = -1;
         txtDni.setEnabled(true);
         titleList.setText("Lista de Clientes");
-        loadClientsToTable(clientService.findAllDTO());
+        loadClientsToTable(clientService.getAllClientsDTO());
 
     }//GEN-LAST:event_btnSaveActionPerformed
 
@@ -617,7 +622,7 @@ public class ClientPanel extends JPanel {
 
     private void btnAllActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnAllActionPerformed
         titleList.setText("Lista de Clientes");
-        loadClientsToTable(clientService.findAllDTO());
+        loadClientsToTable(clientService.getAllClientsDTO());
     }//GEN-LAST:event_btnAllActionPerformed
 
     private void btnActiveActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnActiveActionPerformed
@@ -725,77 +730,13 @@ public class ClientPanel extends JPanel {
                 .collect(Collectors.toList()));
     }//GEN-LAST:event_btnSearchActionPerformed
 
-
-
-    /**
-     * Guarda los bordes originales de los campos para poder restaurarlos al salir de foco.
-     */
-    private void storeDefaultBorder() {
-        txtDni.setBorder(defaultBorder);
-        txtLastName.setBorder(defaultBorder);
-        txtMail.setBorder(defaultBorder);
-        txtName.setBorder(defaultBorder);
-        txtPhone.setBorder(defaultBorder);
-        comboBoxPlan.setBorder(defaultComboBoxBorder);
-    }
-
-    /**
-     * Configura el comportamiento de los campos de texto al recibir y perder el foco.
-     * Aplica placeholder y resetea el borde al estado original.
-     */
-    private void configureFieldWithPlaceholder(JTextField field, String placeholder) {
-        field.setText(placeholder);
-        field.setForeground(COLOR_PLACEHOLDER);
-
-        field.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                // Si el usuario no ha ingresado nada, se limpia el campo
-                if (field.getText().equals(placeholder)) {
-                    field.setText("");
-                    field.setForeground(COLOR_INPUT);
-                }
-                // Se restaura el borde por defecto
-                field.setBorder(defaultBorder);
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                // Si el usuario deja el campo vacío, se restaura el placeholder
-                if (field.getText().isBlank()) {
-                    field.setText(placeholder);
-                    field.setForeground(COLOR_PLACEHOLDER);
-                }
-            }
-        });
-    }
-
-    /**
-     * Asigna listeners de foco a todos los campos con su respectivo texto por defecto.
-     */
-    private void addFocusListeners() {
-        configureFieldWithPlaceholder(txtDni, "Ingrese el DNI *");
-        configureFieldWithPlaceholder(txtLastName, "Ingrese el apellido *");
-        configureFieldWithPlaceholder(txtMail, "Ingrese el mail");
-        configureFieldWithPlaceholder(txtName, "Ingrese el nombre *");
-        configureFieldWithPlaceholder(txtPhone, "Ingrese el celular");
-    }
-
     /**
      * Resetea el formulario a su estado inicial:
      * - Restaura bordes
      * - Aplica placeholders
      * - Reinicia selección del combo
      */
-    private void resetForm() {
-        storeDefaultBorder();
-        configureFieldWithPlaceholder(txtDni, "Ingrese el DNI *");
-        configureFieldWithPlaceholder(txtLastName, "Ingrese el apellido *");
-        configureFieldWithPlaceholder(txtMail, "Ingrese el mail");
-        configureFieldWithPlaceholder(txtName, "Ingrese el nombre *");
-        configureFieldWithPlaceholder(txtPhone, "Ingrese el celular");
-        comboBoxPlan.setSelectedIndex(0);
-    }
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnActivate;

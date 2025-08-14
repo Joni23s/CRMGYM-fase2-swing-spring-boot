@@ -1,11 +1,11 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PlanDTO;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.ClientMapper;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PlanMapper;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Plan;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PlanRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,12 +14,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class PlanService {
 
-    @Autowired
-    private PlanRepository planRepository;
+    private final PlanRepository planRepository;
+    private final ClientService clientService;
+    private final HistoricalPlanService historicalPlanService;
 
-    public Optional<Plan> findByNamePlanIgnoreCase(String name){
+    public Optional<Plan> findByNamePlanIgnoreCase(String name) {
         return planRepository.findByNamePlanIgnoreCase(name);
     }
 
@@ -39,25 +41,28 @@ public class PlanService {
         return planRepository.findByValue(cost);
     }
 
-    public List<Plan> findByIsActive(boolean isActive){
+    public List<Plan> findByIsActive(boolean isActive) {
         return planRepository.findByIsActive(isActive);
     }
 
-    public void deactivate(Integer id) {
+    public void changeStatusWithClients(Integer id, boolean status) {
         planRepository.findById(id).ifPresent(plan -> {
-            plan.setIsActive(false);
+            if (!status) {
+                List<Client> clients = clientService.findByCurrentPlan(plan.getNamePlan());
+                clients.forEach(client -> {
+                    historicalPlanService.closeCurrentPlan(client);
+                    findByNamePlanIgnoreCase("Sin Plan").ifPresent(noPlan -> {
+                        client.setCurrentPlan(noPlan);
+                        clientService.save(client);
+                    });
+                });
+            }
+            plan.setIsActive(status);
             planRepository.save(plan);
         });
     }
 
-    public void activate(Integer id) {
-        planRepository.findById(id).ifPresent(plan -> {
-            plan.setIsActive(true);
-            planRepository.save(plan);
-        });
-    }
-
-    public List<PlanDTO> getAllPlans() {
+    public List<PlanDTO> getAllPlansDTO() {
         return planRepository.findAll()
                 .stream()
                 .map(PlanMapper::toDTO)
@@ -74,5 +79,4 @@ public class PlanService {
     public void save(Plan plan) {
         planRepository.save(plan);
     }
-
 }
