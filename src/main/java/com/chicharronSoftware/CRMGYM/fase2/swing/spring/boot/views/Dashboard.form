@@ -53,7 +53,8 @@
                       <Component id="jPHeader" alignment="1" max="32767" attributes="0"/>
                       <Group type="102" attributes="0">
                           <Component id="jLDay" min="-2" pref="366" max="-2" attributes="0"/>
-                          <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                          <EmptySpace max="32767" attributes="0"/>
+                          <Component id="btnDarMode" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <Component id="jPContent" alignment="0" pref="753" max="32767" attributes="0"/>
                   </Group>
@@ -65,7 +66,10 @@
           <Group type="103" groupAlignment="0" attributes="0">
               <Group type="102" attributes="0">
                   <EmptySpace min="-2" pref="7" max="-2" attributes="0"/>
-                  <Component id="jLDay" min="-2" pref="28" max="-2" attributes="0"/>
+                  <Group type="103" groupAlignment="3" attributes="0">
+                      <Component id="jLDay" alignment="3" min="-2" pref="28" max="-2" attributes="0"/>
+                      <Component id="btnDarMode" alignment="3" min="-2" max="-2" attributes="0"/>
+                  </Group>
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="jPHeader" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
@@ -243,6 +247,14 @@
           <Properties>
             <Property name="text" type="java.lang.String" value="Hoy es Domingo 20 de Julio de 2025"/>
           </Properties>
+        </Component>
+        <Component class="javax.swing.JRadioButton" name="btnDarMode">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Modo Oscuro"/>
+          </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnDarModeActionPerformed"/>
+          </Events>
         </Component>
       </SubComponents>
     </Container>

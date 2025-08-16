@@ -62,14 +62,20 @@ public class ClientService {
             if (!existing.getCurrentPlan().equals(client.getCurrentPlan())) {
                 // Cerrar el historial anterior
                 historicalPlanService.closeCurrentPlan(existing);
-                //Registrar nuevo historial
+                // Guardar cambios en cliente primero
+                clientRepository.save(client);
+                // Registrar nuevo historial
                 historicalPlanService.registerNewPlan(client, client.getCurrentPlan());
+            } else {
+                // Si no cambia el plan, solo actualizamos
+                clientRepository.save(client);
             }
         } else {
+            // Guardar cliente primero
+            clientRepository.save(client);
+            // Registrar historial con el cliente persistido
             historicalPlanService.registerNewPlan(client, client.getCurrentPlan());
         }
-
-        clientRepository.save(client);
     }
 
     public void changeStatusAndPlan(Integer clientId, boolean newStatus, Plan newPlan) {

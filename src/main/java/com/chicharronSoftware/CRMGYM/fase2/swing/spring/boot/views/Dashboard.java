@@ -11,10 +11,16 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.MainPa
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.PlansPanel;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.HistoricalPanel;
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme;
+import com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatGitHubIJTheme;
 import java.awt.BorderLayout;
+import java.awt.Window;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -84,6 +90,7 @@ public class Dashboard extends javax.swing.JFrame {
         jPHeader = new javax.swing.JPanel();
         jLMessage = new javax.swing.JLabel();
         jLDay = new javax.swing.JLabel();
+        btnDarMode = new javax.swing.JRadioButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(1080, 720));
@@ -195,6 +202,13 @@ public class Dashboard extends javax.swing.JFrame {
 
         jLDay.setText("Hoy es Domingo 20 de Julio de 2025");
 
+        btnDarMode.setText("Modo Oscuro");
+        btnDarMode.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnDarModeActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPBackgroundLayout = new javax.swing.GroupLayout(jPBackground);
         jPBackground.setLayout(jPBackgroundLayout);
         jPBackgroundLayout.setHorizontalGroup(
@@ -206,7 +220,8 @@ public class Dashboard extends javax.swing.JFrame {
                     .addComponent(jPHeader, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPBackgroundLayout.createSequentialGroup()
                         .addComponent(jLDay, javax.swing.GroupLayout.PREFERRED_SIZE, 366, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnDarMode))
                     .addComponent(jPContent, javax.swing.GroupLayout.DEFAULT_SIZE, 753, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -214,7 +229,9 @@ public class Dashboard extends javax.swing.JFrame {
             jPBackgroundLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPBackgroundLayout.createSequentialGroup()
                 .addGap(7, 7, 7)
-                .addComponent(jLDay, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPBackgroundLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLDay, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnDarMode))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPHeader, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -280,7 +297,29 @@ public class Dashboard extends javax.swing.JFrame {
         
     }//GEN-LAST:event_jBPlansActionPerformed
 
+    private void btnDarModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDarModeActionPerformed
+        boolean darkMode = btnDarMode.isSelected();
+        setTheme(darkMode);
+    }//GEN-LAST:event_btnDarModeActionPerformed
+
+    private void setTheme(boolean darkMode) {
+    try {
+        if (darkMode) {
+            UIManager.setLookAndFeel(new com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme());
+        } else {
+            UIManager.setLookAndFeel(new com.formdev.flatlaf.intellijthemes.FlatArcOrangeIJTheme());
+        }
+        // Refrescar UI de todos los componentes abiertos
+        for (Window window : Window.getWindows()) {
+            SwingUtilities.updateComponentTreeUI(window);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JRadioButton btnDarMode;
     private javax.swing.JButton jBClients;
     private javax.swing.JButton jBHistory;
     private javax.swing.JButton jBMain;

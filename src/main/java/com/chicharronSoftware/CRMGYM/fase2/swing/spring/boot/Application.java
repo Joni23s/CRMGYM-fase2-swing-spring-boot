@@ -1,7 +1,6 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.Dashboard;
-import com.formdev.flatlaf.FlatDarkLaf;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -15,7 +14,7 @@ public class Application {
 
 	public static void main(String[] args) {
 		try {
-			UIManager.setLookAndFeel(new FlatDarkLaf());
+			UIManager.setLookAndFeel(new com.formdev.flatlaf.intellijthemes.FlatArcOrangeIJTheme());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -15,6 +15,7 @@ public class HistoricalPlanMapper {
                 historicalPlan.getStartDate(),
                 historicalPlan.getEndDate(),
                 historicalPlan.getIsActive() ? "Activo" : "Inactivo",
+                historicalPlan.getClient().getDocumentId().toString(),
                 historicalPlan.getClient().getName() + " " + historicalPlan.getClient().getLastName(),
                 historicalPlan.getPlan().getNamePlan()
         );
