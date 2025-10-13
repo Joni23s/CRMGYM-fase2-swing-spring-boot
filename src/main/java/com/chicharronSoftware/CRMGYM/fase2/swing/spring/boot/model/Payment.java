@@ -48,7 +48,7 @@ public class Payment {
     private BigDecimal finalAmount;
 
     // Relación con Cliente
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "document_id", nullable = false)
     private Client client;
 

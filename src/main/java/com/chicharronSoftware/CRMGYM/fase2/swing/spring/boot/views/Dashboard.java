@@ -3,14 +3,12 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.HistoricalPlanRepository;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.HistoricalPlanService;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PaymentService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.ClientValidation;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.PlanValidation;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.ClientPanel;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.MainPanel;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.*;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.PlansPanel;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.HistoricalPanel;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme;
 import com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatGitHubIJTheme;
@@ -29,6 +27,7 @@ public class Dashboard extends javax.swing.JFrame {
     private final ClientService clientService;
     private final PlanService planService;
     private final HistoricalPlanService historicalPlanService;
+    private final PaymentService paymentService;
 
     @Autowired
     private PlanValidation planValidation;
@@ -39,10 +38,11 @@ public class Dashboard extends javax.swing.JFrame {
 
 
     @Autowired
-    public Dashboard(ClientService clientService, PlanService planService, HistoricalPlanService historicalPlanService) {
+    public Dashboard(ClientService clientService, PlanService planService, HistoricalPlanService historicalPlanService, PaymentService paymentService) {
         this.clientService = clientService;
         this.planService = planService;
         this.historicalPlanService = historicalPlanService;
+        this.paymentService = paymentService;
         initComponents();
         jLMessage.putClientProperty("FlatLaf.styleClass", "h1");
         jLDay.putClientProperty("FlatLaf.style", "font: 140% $light.font");
@@ -133,6 +133,11 @@ public class Dashboard extends javax.swing.JFrame {
 
         jBPay1.setText("PAGOS");
         jBPay1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jBPay1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBPay1ActionPerformed(evt);
+            }
+        });
 
         jLTitle.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         jLTitle.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -301,6 +306,18 @@ public class Dashboard extends javax.swing.JFrame {
         boolean darkMode = btnDarMode.isSelected();
         setTheme(darkMode);
     }//GEN-LAST:event_btnDarModeActionPerformed
+
+    private void jBPay1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBPay1ActionPerformed
+        PaymentPanel pp = new PaymentPanel(paymentService, clientService);
+
+        pp.setSize(750, 585);
+        pp.setLocation(0, 0);
+
+        jPContent.removeAll();
+        jPContent.add(pp, BorderLayout.CENTER);
+        jPContent.revalidate();
+        jPContent.repaint();
+    }//GEN-LAST:event_jBPay1ActionPerformed
 
     private void setTheme(boolean darkMode) {
     try {
