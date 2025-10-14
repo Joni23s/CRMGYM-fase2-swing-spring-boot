@@ -17,8 +17,8 @@ import java.awt.Window;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
+import javax.swing.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +44,8 @@ public class Dashboard extends javax.swing.JFrame {
         this.historicalPlanService = historicalPlanService;
         this.paymentService = paymentService;
         initComponents();
+        this.setExtendedState(JFrame.MAXIMIZED_BOTH); // Opcional: arranca maximizado
+        jPContent.setLayout(new BorderLayout());      //  Asegura layout adaptable
         jLMessage.putClientProperty("FlatLaf.styleClass", "h1");
         jLDay.putClientProperty("FlatLaf.style", "font: 140% $light.font");
         setDate();
@@ -264,42 +266,37 @@ public class Dashboard extends javax.swing.JFrame {
         initContent();
     }//GEN-LAST:event_jBMainActionPerformed
 
+    // Método para llamar al panel de Historial
     private void jBHistoryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBHistoryActionPerformed
         HistoricalPanel hp = new HistoricalPanel(clientService, planService, historicalPlanService);
-        hp.setSize(750, 585);
-        hp.setLocation(0, 0);
 
         jPContent.removeAll();
+        jPContent.setLayout(new BorderLayout()); // Asegura que el panel se adapte al tamaño
         jPContent.add(hp, BorderLayout.CENTER);
         jPContent.revalidate();
         jPContent.repaint();
     }//GEN-LAST:event_jBHistoryActionPerformed
 
-    //Metodo para llamar a menu cliente
+    // Método para llamar al menú de Clientes
     private void jBClientsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBClientsActionPerformed
         ClientPanel cp = new ClientPanel(clientService, planService, clientValidation);
 
-        cp.setSize(750, 585);
-        cp.setLocation(0, 0);
-
         jPContent.removeAll();
+        jPContent.setLayout(new BorderLayout()); // Asegura ajuste dinámico
         jPContent.add(cp, BorderLayout.CENTER);
         jPContent.revalidate();
         jPContent.repaint();
-        
     }//GEN-LAST:event_jBClientsActionPerformed
 
+    // Método para llamar al menú de Planes
     private void jBPlansActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBPlansActionPerformed
         PlansPanel pp = new PlansPanel(planService, planValidation, clientService);
 
-        pp.setSize(750, 585);
-        pp.setLocation(0, 0);
-
         jPContent.removeAll();
+        jPContent.setLayout(new BorderLayout()); //  Se adapta al tamaño del contenedor
         jPContent.add(pp, BorderLayout.CENTER);
         jPContent.revalidate();
         jPContent.repaint();
-        
     }//GEN-LAST:event_jBPlansActionPerformed
 
     private void btnDarModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDarModeActionPerformed
@@ -310,10 +307,8 @@ public class Dashboard extends javax.swing.JFrame {
     private void jBPay1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBPay1ActionPerformed
         PaymentPanel pp = new PaymentPanel(paymentService, clientService);
 
-        pp.setSize(750, 585);
-        pp.setLocation(0, 0);
-
         jPContent.removeAll();
+        jPContent.setLayout(new BorderLayout()); //  Evita tamaños fijos
         jPContent.add(pp, BorderLayout.CENTER);
         jPContent.revalidate();
         jPContent.repaint();
