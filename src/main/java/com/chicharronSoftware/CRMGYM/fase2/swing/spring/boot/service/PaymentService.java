@@ -58,17 +58,7 @@ public class PaymentService {
         return paymentRepository.findByPaymentStatus(status);
     }
 
-    public List<Payment> findByPeriod(LocalDate period) {
-        return paymentRepository.findByPeriod(period);
-    }
 
-    public List<Payment> findByPaymentDateBetween(LocalDate start, LocalDate end) {
-        return paymentRepository.findByPaymentDateBetween(start, end);
-    }
-
-    public BigDecimal getTotalCollectedByPeriod(LocalDate period) {
-        return paymentRepository.getTotalCollectedByPeriod(period);
-    }
 
     // --- DTO Helpers ---
     public List<PaymentDTO> getAllPaymentsDTO() {

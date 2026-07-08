@@ -18,7 +18,6 @@ public interface ClientRepository extends JpaRepository<Client, Integer> {
     // al cliente, nos traiga su "currentPlan" en la misma consulta (un LEFT OUTER JOIN).
     // Esto mata el problema N+1 al mapear los DTOs de listas completas.
     
-    @Override
     @EntityGraph(attributePaths = {"currentPlan"})
     List<Client> findAll();
 
@@ -27,6 +26,7 @@ public interface ClientRepository extends JpaRepository<Client, Integer> {
 
     @EntityGraph(attributePaths = {"currentPlan"})
     List<Client> findByLastNameIgnoreCase(String lastName);
+
 
     @EntityGraph(attributePaths = {"currentPlan"})
     List<Client> findByIsActive(boolean isActive);
@@ -39,4 +39,5 @@ public interface ClientRepository extends JpaRepository<Client, Integer> {
 
     @EntityGraph(attributePaths = {"currentPlan"})
     List<Client> findByCurrentPlan_NamePlan(String namePlan);
+
 }

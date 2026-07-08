@@ -8,6 +8,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.Payment
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PaymentService;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.utils.FormatterUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -266,16 +267,8 @@ public class PaymentPanel extends JPanel implements Scrollable {
         loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
     }
 
-    private static final java.time.format.DateTimeFormatter DATE_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-    private String formatDate(LocalDate date) {
-        return date != null ? date.format(DATE_FORMATTER) : "";
-    }
-
-    private String formatMoney(BigDecimal amount) {
-        if (amount == null) return "";
-        return "$ " + amount.setScale(2, java.math.RoundingMode.HALF_UP);
-    }
+    // [MEJORA JUNIOR] Se eliminaron los formateadores estáticos locales (DATE_FORMATTER, formatMoney)
+    // para delegar esta responsabilidad a FormatterUtils, reduciendo el acoplamiento y repetición de código.
 
     private void loadPaymentsToTableAsync(java.util.concurrent.Callable<List<PaymentDTO>> loader) {
         tableModelPays.setRowCount(0);
@@ -297,11 +290,11 @@ public class PaymentPanel extends JPanel implements Scrollable {
                                 dto.getDocumentId() != null ? dto.getDocumentId().toString() : "",
                                 dto.getNameClient(),
                                 dto.getNamePlan(),
-                                formatDate(dto.getPeriod()),
-                                formatDate(dto.getPaymentDate()),
-                                formatMoney(dto.getBaseAmount()),
-                                formatMoney(dto.getDiscountApplied()),
-                                formatMoney(dto.getFinalAmount()),
+                                FormatterUtils.formatDate(dto.getPeriod()),
+                                FormatterUtils.formatDate(dto.getPaymentDate()),
+                                FormatterUtils.formatCurrency(dto.getBaseAmount()),
+                                FormatterUtils.formatCurrency(dto.getDiscountApplied()),
+                                FormatterUtils.formatCurrency(dto.getFinalAmount()),
                                 dto.getPaymentMethod(),
                                 dto.getPaymentStatus()
                         });

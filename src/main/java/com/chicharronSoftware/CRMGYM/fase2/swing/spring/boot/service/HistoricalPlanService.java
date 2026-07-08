@@ -42,19 +42,7 @@ public class HistoricalPlanService {
         historicalPlanRepository.save(historical);
     }
 
-    public List<HistoricalPlan> findByClient(Client client){
-        return historicalPlanRepository.findByClient(client);
-    }
 
-    public List<HistoricalPlanDTO> findByClientDTO(Client client){
-        return historicalPlanRepository.findByClient(client).stream()
-                .map(HistoricalPlanMapper::toDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<HistoricalPlan> findByPlan(Plan plan){
-        return historicalPlanRepository.findByPlan(plan);
-    }
 
     public List<HistoricalPlan> findByIsActive(boolean status){
         return historicalPlanRepository.findByIsActive(status);

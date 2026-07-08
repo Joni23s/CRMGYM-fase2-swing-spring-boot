@@ -14,8 +14,7 @@ import java.util.Optional;
 @Repository
 public interface HistoricalPlanRepository extends JpaRepository<HistoricalPlan, Long> {
 
-    List<HistoricalPlan> findByClient(Client client);
-    List<HistoricalPlan> findByPlan(Plan plan);
+
     List<HistoricalPlan> findByIsActive(boolean isActive);
     Optional<HistoricalPlan> findFirstByClientAndIsActiveTrueOrderByStartDateDesc(Client client);
 

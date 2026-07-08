@@ -11,6 +11,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.MainFrame;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.DashboardTable;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.MetricCard;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.utils.FormatterUtils;
 
 import net.miginfocom.swing.MigLayout;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +21,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -545,17 +544,8 @@ public class DashboardPanel extends JPanel implements Scrollable {
                 "hoverForeground: #3b82f6;");
     }
 
-    private static final DateTimeFormatter SHORT_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-    private String formatShortDate(LocalDate date) {
-        return date != null ? date.format(SHORT_DATE_FORMATTER) : "";
-    }
-
-    private String formatMoneyValue(BigDecimal amount) {
-        if (amount == null) return "";
-        return "$ " + amount.setScale(2, java.math.RoundingMode.HALF_UP);
-    }
-
+    // [MEJORA JUNIOR] Se eliminaron SHORT_DATE_FORMATTER y formatMoneyValue
+    // delegando la conversión y formato visual a la nueva clase compartida FormatterUtils.
     // =========================================================================
     // CARGA DE DATOS
     // =========================================================================
@@ -578,10 +568,8 @@ public class DashboardPanel extends JPanel implements Scrollable {
                 .map(Payment::getFinalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.forLanguageTag("es-AR"));
-        DecimalFormat df = new DecimalFormat("$ #,##0.00", symbols);
         if (cardRevenue != null) {
-            cardRevenue.setValue(df.format(totalRevenue));
+            cardRevenue.setValue(FormatterUtils.formatCurrency(totalRevenue));
         }
 
         List<PaymentDTO> payments = paymentService.getAllPaymentsDTO();
@@ -603,8 +591,8 @@ public class DashboardPanel extends JPanel implements Scrollable {
             tableModel.addRow(new Object[]{
                     dto.getNameClient(),
                     dto.getNamePlan(),
-                    formatShortDate(dto.getPaymentDate()),
-                    formatMoneyValue(dto.getFinalAmount()),
+                    FormatterUtils.formatDate(dto.getPaymentDate()),
+                    FormatterUtils.formatCurrency(dto.getFinalAmount()),
                     dto.getPaymentStatus()
             });
         }

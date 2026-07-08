@@ -44,6 +44,8 @@ public class ClientService {
         return clientRepository.findByLastNameIgnoreCase(lastName);
     }
 
+
+
     public List<Client> findByIsActive(boolean isActive) {
         return clientRepository.findByIsActive(isActive);
     }
