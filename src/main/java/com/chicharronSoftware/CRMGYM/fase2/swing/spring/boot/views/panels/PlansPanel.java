@@ -253,22 +253,44 @@ public class PlansPanel extends JPanel implements Scrollable {
         tableModelPlans.setColumnIdentifiers(new Object[]{
                 "Id", "Nombre", "Días hábiles", "Horas hábiles", "Valor", "Notas", "Estado"
         });
-        loadPlansToTable(planService.getAllPlansDTO());
+        loadPlansToTableAsync(() -> planService.getAllPlansDTO());
     }
 
-    private void loadPlansToTable(List<PlanDTO> plans) {
+    private void loadPlansToTableAsync(java.util.concurrent.Callable<List<PlanDTO>> loader) {
         tableModelPlans.setRowCount(0);
-        for (PlanDTO dto : plans) {
-            tableModelPlans.addRow(new Object[] {
-                    dto.getIdPlan(),
-                    dto.getNamePlan(),
-                    dto.getDaysEnabled(),
-                    dto.getHoursEnabled(),
-                    dto.getValue(),
-                    dto.getNotes(),
-                    dto.getStatus()
-            });
-        }
+        tableModelPlans.addRow(new Object[] {
+                "", "", "Cargando datos...", "", "", "", ""
+        });
+        
+        btnSearch.setEnabled(false);
+
+        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+            loader,
+            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<PlanDTO>>() {
+                @Override
+                public void onSuccess(List<PlanDTO> plans) {
+                    tableModelPlans.setRowCount(0);
+                    for (PlanDTO dto : plans) {
+                        tableModelPlans.addRow(new Object[] {
+                                dto.getIdPlan(),
+                                dto.getNamePlan(),
+                                dto.getDaysEnabled(),
+                                dto.getHoursEnabled(),
+                                dto.getValue(),
+                                dto.getNotes(),
+                                dto.getStatus()
+                        });
+                    }
+                    btnSearch.setEnabled(true);
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    btnSearch.setEnabled(true);
+                    JOptionPane.showMessageDialog(PlansPanel.this, "Error cargando planes: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        );
     }
 
     private void resetForm() {
@@ -374,7 +396,7 @@ public class PlansPanel extends JPanel implements Scrollable {
         }
 
         resetForm();
-        loadPlansToTable(planService.getAllPlansDTO());
+        loadPlansToTableAsync(() -> planService.getAllPlansDTO());
     }
 
     private void btnModifyActionPerformed(java.awt.event.ActionEvent evt) {
@@ -414,7 +436,7 @@ public class PlansPanel extends JPanel implements Scrollable {
 
         JOptionPane.showMessageDialog(this, "Estado actualizado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         resetForm();
-        loadPlansToTable(planService.getAllPlansDTO());
+        loadPlansToTableAsync(() -> planService.getAllPlansDTO());
     }
 
     private void btnActivateActionPerformed(java.awt.event.ActionEvent evt) {
@@ -455,9 +477,9 @@ public class PlansPanel extends JPanel implements Scrollable {
         }
 
         titleList.setText("Lista de Planes: Buscados");
-        loadPlansToTable(plans.stream()
-                .map(PlanMapper::toDTO)
-                .collect(Collectors.toList()));
+        loadPlansToTableAsync(() -> plans.stream()
+                .map(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PlanMapper::toDTO)
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     private void btnCleanActionPerformed(java.awt.event.ActionEvent evt) {
@@ -466,17 +488,17 @@ public class PlansPanel extends JPanel implements Scrollable {
 
     private void btnAllActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Lista de Planes");
-        loadPlansToTable(planService.getAllPlansDTO());
+        loadPlansToTableAsync(() -> planService.getAllPlansDTO());
     }
 
     private void btnActiveActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Lista de Planes: Activos");
-        loadPlansToTable(planService.findByIsActiveDTO(true));
+        loadPlansToTableAsync(() -> planService.findByIsActiveDTO(true));
     }
 
     private void btnInactiveActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Lista de Planes: Inactivos");
-        loadPlansToTable(planService.findByIsActiveDTO(false));
+        loadPlansToTableAsync(() -> planService.findByIsActiveDTO(false));
     }
 
     // =========================================================================

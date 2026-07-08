@@ -23,31 +23,45 @@ import java.awt.*;
 
 /**
  * =================================================================================
- * GUÍA DE ARQUITECTURA: PATRÓN APLICACIÓN DE CARCASA (SHELL ARCHITECTURE PATTERN)
+ * GUÍA DE ARQUITECTURA: PATRÓN APLICACIÓN DE CARCASA (SHELL ARCHITECTURE
+ * PATTERN)
  * =================================================================================
  * 
  * 1. EL PATRÓN SHELL (APLICACIÓN CARCASA):
- *    - La Shell (Carcasa) es una ventana de nivel superior que define el marco estructural
- *      global del software (como el menú de navegación lateral y la barra de estado inferior)
- *      pero delega por completo la representación visual del contenido dinámico al centro.
- *    - MainFrame actúa como esta carcasa. No sabe cómo pintar gráficos, ni KPIs, ni tablas;
- *      únicamente proporciona el área central (`centerArea`) para realizar intercambios de
- *      paneles según los eventos de la barra de navegación lateral.
+ * - La Shell (Carcasa) es una ventana de nivel superior que define el marco
+ * estructural
+ * global del software (como el menú de navegación lateral y la barra de estado
+ * inferior)
+ * pero delega por completo la representación visual del contenido dinámico al
+ * centro.
+ * - MainFrame actúa como esta carcasa. No sabe cómo pintar gráficos, ni KPIs,
+ * ni tablas;
+ * únicamente proporciona el área central (`centerArea`) para realizar
+ * intercambios de
+ * paneles según los eventos de la barra de navegación lateral.
  * 
  * 2. INTEGRACIÓN CON EL CONTENEDOR IOC DE SPRING BOOT:
- *    - @Component: Permite a Spring Boot gestionar MainFrame como un Singleton en su contexto de inicio.
- *    - El constructor recibe el bean `DashboardPanel` (que a su vez tiene inyectados sus servicios).
- *      Esto crea una cadena limpia de inyección por constructor de dependencias controladas, evitando
- *      inicializaciones manuales redundantes en el hilo visual.
+ * - @Component: Permite a Spring Boot gestionar MainFrame como un Singleton en
+ * su contexto de inicio.
+ * - El constructor recibe el bean `DashboardPanel` (que a su vez tiene
+ * inyectados sus servicios).
+ * Esto crea una cadena limpia de inyección por constructor de dependencias
+ * controladas, evitando
+ * inicializaciones manuales redundantes en el hilo visual.
  * 
  * 3. IMPORTANCIA DE revalidate() Y repaint() EN EL EDT:
- *    - Cuando llamamos a `centerArea.removeAll()`, los componentes son removidos de la jerarquía de Swing.
- *      Sin embargo, el Layout Manager (en este caso MigLayout) no detecta automáticamente la alteración
- *      del árbol hasta que se le notifique explícitamente.
- *    - `revalidate()`: Le dice a Swing que recalcule de manera síncrona el posicionamiento y dimensiones
- *      de los componentes hijos del panel según las nuevas restricciones.
- *    - `repaint()`: Encola la petición de dibujo sobre el Event Dispatch Thread (EDT) para renderizar
- *      nuevamente los píxeles en pantalla de forma limpia sin residuos visuales de paneles anteriores.
+ * - Cuando llamamos a `centerArea.removeAll()`, los componentes son removidos
+ * de la jerarquía de Swing.
+ * Sin embargo, el Layout Manager (en este caso MigLayout) no detecta
+ * automáticamente la alteración
+ * del árbol hasta que se le notifique explícitamente.
+ * - `revalidate()`: Le dice a Swing que recalcule de manera síncrona el
+ * posicionamiento y dimensiones
+ * de los componentes hijos del panel según las nuevas restricciones.
+ * - `repaint()`: Encola la petición de dibujo sobre el Event Dispatch Thread
+ * (EDT) para renderizar
+ * nuevamente los píxeles en pantalla de forma limpia sin residuos visuales de
+ * paneles anteriores.
  * =================================================================================
  */
 @Component
@@ -117,7 +131,8 @@ public class MainFrame extends JFrame {
                 e -> showPanel(new ClientPanel(clientService, planService, clientValidation, buttonFactory)));
         sidebarPanel.addNavigationListener("Planes",
                 e -> showPanel(new PlansPanel(planService, planValidation, clientService, buttonFactory)));
-        sidebarPanel.addNavigationListener("Pagos", e -> showPanel(new PaymentPanel(paymentService, clientService, buttonFactory)));
+        sidebarPanel.addNavigationListener("Pagos",
+                e -> showPanel(new PaymentPanel(paymentService, clientService, buttonFactory)));
         sidebarPanel.addNavigationListener("Historial",
                 e -> showPanel(new HistoricalPanel(clientService, planService, historicalPlanService, buttonFactory)));
 
@@ -135,11 +150,11 @@ public class MainFrame extends JFrame {
         dashboardPanel.refreshData();
 
         // 1. Limpiar el contenedor central donde se montan las vistas
-        centerArea.removeAll(); 
+        centerArea.removeAll();
 
         // 2. Envolver el panel en un JScrollPane para permitir scroll vertical
-        //    cuando la ventana es más pequeña que el contenido preferido.
-        //    DashboardPanel implementa Scrollable: llena el ancho, scroll solo vertical.
+        // cuando la ventana es más pequeña que el contenido preferido.
+        // DashboardPanel implementa Scrollable: llena el ancho, scroll solo vertical.
         JScrollPane scrollWrapper = new JScrollPane(dashboardPanel,
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -147,10 +162,10 @@ public class MainFrame extends JFrame {
         scrollWrapper.getViewport().setBackground(Color.decode("#0b0f19"));
         scrollWrapper.getVerticalScrollBar().setUnitIncrement(16);
 
-        centerArea.add(scrollWrapper, "grow"); 
+        centerArea.add(scrollWrapper, "grow");
 
         // 3. Forzar a Swing y al EDT a recalcular la geometría del árbol de componentes
-        centerArea.revalidate(); 
+        centerArea.revalidate();
         centerArea.repaint();
     }
 
@@ -180,5 +195,6 @@ public class MainFrame extends JFrame {
         showPanel(new PaymentPanel(paymentService, clientService, buttonFactory));
     }
 
-    // [MEJORA JUNIOR] Se eliminó el método 'formatCurrency' ya que no se estaba utilizando en esta clase (código muerto).
+    // [MEJORA JUNIOR] Se eliminó el método 'formatCurrency' ya que no se estaba
+    // utilizando en esta clase (código muerto).
 }

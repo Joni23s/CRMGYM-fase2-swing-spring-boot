@@ -393,27 +393,54 @@ public class ClientPanel extends JPanel implements Scrollable {
         // Asignar el renderizador de píldoras de estado personalizado a la columna 5 (Estado)
         tableListClients.getColumnModel().getColumn(5).setCellRenderer(new StatusBadgeRenderer(false));
 
-        loadClientsToTable(clientService.getAllClientsDTO());
+        loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
     }
-
-    private void loadClientsToTable(List<ClientDTO> clients) {
-        // Aseguramos que la actualización de la tabla se ejecute de forma segura en el EDT
-        SwingUtilities.invokeLater(() -> {
-            tableModelClients.setRowCount(0);
-            for (ClientDTO dto : clients) {
-                tableModelClients.addRow(new Object[] {
-                        dto.getDocumentId(),
-                        dto.getName(),
-                        dto.getLastName(),
-                        dto.getEmail(),
-                        dto.getPhoneNumber(),
-                        dto.getStatus(),
-                        dto.getNamePlan()
-                });
-            }
+    private void loadClientsToTableAsync(java.util.concurrent.Callable<List<ClientDTO>> loader) {
+        tableModelClients.setRowCount(0);
+        tableModelClients.addRow(new Object[] {
+                "", "", "Cargando datos...", "", "", "", ""
         });
-    }
+        
+        btnAll.setEnabled(false);
+        btnActive.setEnabled(false);
+        btnInactive.setEnabled(false);
+        btnSearch.setEnabled(false);
+        
+        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+            loader,
+            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<ClientDTO>>() {
+                @Override
+                public void onSuccess(List<ClientDTO> clients) {
+                    tableModelClients.setRowCount(0);
+                    for (ClientDTO dto : clients) {
+                        tableModelClients.addRow(new Object[] {
+                                dto.getDocumentId(),
+                                dto.getName(),
+                                dto.getLastName(),
+                                dto.getEmail(),
+                                dto.getPhoneNumber(),
+                                dto.getStatus(),
+                                dto.getNamePlan()
+                        });
+                    }
+                    enableButtons();
+                }
 
+                @Override
+                public void onError(Exception ex) {
+                    enableButtons();
+                    JOptionPane.showMessageDialog(ClientPanel.this, "Error cargando clientes: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                
+                private void enableButtons() {
+                    btnAll.setEnabled(true);
+                    btnActive.setEnabled(true);
+                    btnInactive.setEnabled(true);
+                    btnSearch.setEnabled(true);
+                }
+            }
+        );
+    }
     private void loadPlansToComboBox() {
         comboBoxPlan.removeAllItems();
         comboBoxPlan.addItem("Seleccione un Plan *");
@@ -542,7 +569,7 @@ public class ClientPanel extends JPanel implements Scrollable {
         }
 
         resetForm();
-        loadClientsToTable(clientService.getAllClientsDTO());
+        loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
     }
 
     private void btnModifyActionPerformed(java.awt.event.ActionEvent evt) {
@@ -574,17 +601,17 @@ public class ClientPanel extends JPanel implements Scrollable {
 
     private void btnAllActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Lista de Clientes");
-        loadClientsToTable(clientService.getAllClientsDTO());
+        loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
     }
 
     private void btnActiveActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Lista de Clientes: Activos");
-        loadClientsToTable(clientService.findByIsActiveDTO(true));
+        loadClientsToTableAsync(() -> clientService.findByIsActiveDTO(true));
     }
 
     private void btnInactiveActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Lista de Clientes: Inactivos");
-        loadClientsToTable(clientService.findByIsActiveDTO(false));
+        loadClientsToTableAsync(() -> clientService.findByIsActiveDTO(false));
     }
 
     private void btnActivateActionPerformed(java.awt.event.ActionEvent evt) {
@@ -612,7 +639,7 @@ public class ClientPanel extends JPanel implements Scrollable {
 
             JOptionPane.showMessageDialog(this, "Estado actualizado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             resetForm();
-            loadClientsToTable(clientService.getAllClientsDTO());
+            loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
         }
     }
 
@@ -653,9 +680,9 @@ public class ClientPanel extends JPanel implements Scrollable {
         }
 
         titleList.setText("Lista de Clientes: Buscados");
-        loadClientsToTable(clients.stream()
-                .map(ClientMapper::toDTO)
-                .collect(Collectors.toList()));
+        loadClientsToTableAsync(() -> clients.stream()
+                .map(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.ClientMapper::toDTO)
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     private void btnCleanActionPerformed(java.awt.event.ActionEvent evt) {

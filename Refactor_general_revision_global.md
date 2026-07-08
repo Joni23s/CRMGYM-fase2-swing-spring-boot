@@ -251,10 +251,12 @@
 
 ---
 
-### ⚡ Fase 4: Thread Safety y EDT Optimization (Días 6-8)
-**Objetivo**: Eliminar todos los bloqueos del EDT
-
-1. Crear `ExecutorServiceManager.java`:
+### ⚡ **Fase 4 - Thread Safety y EDT Optimization (Completada)**
+- [x] Migrar todas las cargas iniciales de paneles pesados a ejecución asíncrona.
+- [x] Adoptar SwingWorker (con la abstracción `AsyncDataLoader`) como mecanismo estándar en la capa de vistas.
+- [x] Implementar `ExecutorServiceManager` para infraestructura compartida backend.
+- [x] Añadir feedback visual de carga en tablas (por ejemplo, JLabel con mensaje “Cargando datos…” en las celdas o JProgressBar).
+- [x] Eliminar consultas con problemas N+1 en las cargas asíncronas (`HistoricalPlanRepository`).
    ```java
    @Component
    public class ExecutorServiceManager {

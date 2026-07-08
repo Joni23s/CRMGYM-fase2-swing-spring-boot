@@ -283,15 +283,67 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         tableModelHistorical.setColumnIdentifiers(new Object[]{
                 "Id", "Inicio", "Fin", "Estado", "DNI", "Cliente", "Plan"
         });
-        loadHistoricalPlanToTable(clientService.findAll());
+        loadAllHistoricalPlanToTableAsync();
     }
 
-    private void loadHistoricalPlanToTable(List<Client> clients) {
+    private void showTableLoadingState() {
         tableModelHistorical.setRowCount(0);
-        // [MEJORA JUNIOR] Evitamos el problema N+1 haciendo una sola consulta masiva
-        // en lugar de iterar cliente por cliente (lo que hacía una consulta por cada uno).
-        List<HistoricalPlanDTO> historicalPlanDTOS = historicalPlanService.findByClientsWithDetails(clients);
+        tableModelHistorical.addRow(new Object[] {
+                "", "", "Cargando datos...", "", "", "", ""
+        });
+    }
 
+    private void loadAllHistoricalPlanToTableAsync() {
+        showTableLoadingState();
+        // Deshabilitar botones temporamente para feedback
+        btnSearch.setEnabled(false);
+
+        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+            () -> historicalPlanService.findAllWithDetails(),
+            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<HistoricalPlanDTO>>() {
+                @Override
+                public void onSuccess(List<HistoricalPlanDTO> result) {
+                    populateHistoricalTable(result);
+                    btnSearch.setEnabled(true);
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    btnSearch.setEnabled(true);
+                    JOptionPane.showMessageDialog(HistoricalPanel.this, "Error cargando historial: " + ex.getMessage());
+                }
+            }
+        );
+    }
+
+    private void loadHistoricalPlanToTableAsync(List<Client> clients) {
+        if (clients == null || clients.isEmpty()) {
+            tableModelHistorical.setRowCount(0);
+            return;
+        }
+        showTableLoadingState();
+        btnSearch.setEnabled(false);
+
+        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+            () -> historicalPlanService.findByClientsWithDetails(clients),
+            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<HistoricalPlanDTO>>() {
+                @Override
+                public void onSuccess(List<HistoricalPlanDTO> result) {
+                    populateHistoricalTable(result);
+                    btnSearch.setEnabled(true);
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    btnSearch.setEnabled(true);
+                    JOptionPane.showMessageDialog(HistoricalPanel.this, "Error cargando filtrado: " + ex.getMessage());
+                }
+            }
+        );
+    }
+
+    private void populateHistoricalTable(List<HistoricalPlanDTO> historicalPlanDTOS) {
+        tableModelHistorical.setRowCount(0);
         for (HistoricalPlanDTO dto : historicalPlanDTOS) {
             tableModelHistorical.addRow(new Object[] {
                     dto.getIdHistorical(),
@@ -332,13 +384,26 @@ public class HistoricalPanel extends JPanel implements Scrollable {
 
         btnClientActive.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
-                loadHistoricalPlanToTable(clientService.findByIsActive(true));
+                // Para simplificar, podríamos cargar todo y filtrar en memoria, o usar AsyncDataLoader:
+                com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+                    () -> clientService.findByIsActive(true),
+                    new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<Client>>() {
+                        @Override public void onSuccess(List<Client> clients) { loadHistoricalPlanToTableAsync(clients); }
+                        @Override public void onError(Exception ex) {}
+                    }
+                );
             }
         });
 
         btnClientInactive.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
-                loadHistoricalPlanToTable(clientService.findByIsActive(false));
+                com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+                    () -> clientService.findByIsActive(false),
+                    new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<Client>>() {
+                        @Override public void onSuccess(List<Client> clients) { loadHistoricalPlanToTableAsync(clients); }
+                        @Override public void onError(Exception ex) {}
+                    }
+                );
             }
         });
     }
@@ -427,7 +492,7 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         }
 
         titleList.setText("Lista de Historial: Buscados");
-        loadHistoricalPlanToTable(new ArrayList<>(clients));
+        loadHistoricalPlanToTableAsync(new ArrayList<>(clients));
     }
 
     private void btnCleanPanelsActionPerformed(ActionEvent evt) {
@@ -456,7 +521,7 @@ public class HistoricalPanel extends JPanel implements Scrollable {
             clients.add(client);
 
             titleList.setText("Historial de Cliente: " + client.getDocumentId());
-            loadHistoricalPlanToTable(clients);
+            loadHistoricalPlanToTableAsync(clients);
 
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "El valor de ID no es válido.", "Error de formato", JOptionPane.ERROR_MESSAGE);

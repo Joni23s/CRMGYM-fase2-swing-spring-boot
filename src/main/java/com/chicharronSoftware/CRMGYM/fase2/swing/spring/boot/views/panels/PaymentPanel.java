@@ -263,7 +263,7 @@ public class PaymentPanel extends JPanel implements Scrollable {
                 "ID", "DNI", "Cliente", "Plan", "Periodo", "Fecha de Pago", "Precio Base", "Descuento", "Precio Final",
                 "Método de Pago", "Estado"
         });
-        loadPaymentsToTable(paymentService.getAllPaymentsDTO());
+        loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
     }
 
     private static final java.time.format.DateTimeFormatter DATE_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -277,23 +277,45 @@ public class PaymentPanel extends JPanel implements Scrollable {
         return "$ " + amount.setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
-    private void loadPaymentsToTable(List<PaymentDTO> payments) {
+    private void loadPaymentsToTableAsync(java.util.concurrent.Callable<List<PaymentDTO>> loader) {
         tableModelPays.setRowCount(0);
-        for (PaymentDTO dto : payments) {
-            tableModelPays.addRow(new Object[] {
-                    dto.getIdPayment() != null ? dto.getIdPayment().toString() : "",
-                    dto.getDocumentId() != null ? dto.getDocumentId().toString() : "",
-                    dto.getNameClient(),
-                    dto.getNamePlan(),
-                    formatDate(dto.getPeriod()),
-                    formatDate(dto.getPaymentDate()),
-                    formatMoney(dto.getBaseAmount()),
-                    formatMoney(dto.getDiscountApplied()),
-                    formatMoney(dto.getFinalAmount()),
-                    dto.getPaymentMethod(),
-                    dto.getPaymentStatus()
-            });
-        }
+        tableModelPays.addRow(new Object[] {
+                "", "", "Cargando datos...", "", "", "", "", "", "", "", ""
+        });
+        
+        btnSearch.setEnabled(false);
+
+        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+            loader,
+            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<PaymentDTO>>() {
+                @Override
+                public void onSuccess(List<PaymentDTO> payments) {
+                    tableModelPays.setRowCount(0);
+                    for (PaymentDTO dto : payments) {
+                        tableModelPays.addRow(new Object[] {
+                                dto.getIdPayment() != null ? dto.getIdPayment().toString() : "",
+                                dto.getDocumentId() != null ? dto.getDocumentId().toString() : "",
+                                dto.getNameClient(),
+                                dto.getNamePlan(),
+                                formatDate(dto.getPeriod()),
+                                formatDate(dto.getPaymentDate()),
+                                formatMoney(dto.getBaseAmount()),
+                                formatMoney(dto.getDiscountApplied()),
+                                formatMoney(dto.getFinalAmount()),
+                                dto.getPaymentMethod(),
+                                dto.getPaymentStatus()
+                        });
+                    }
+                    btnSearch.setEnabled(true);
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    btnSearch.setEnabled(true);
+                    JOptionPane.showMessageDialog(PaymentPanel.this, "Error cargando pagos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        );
     }
 
     private void loadPaymentMethod() {
@@ -449,7 +471,7 @@ public class PaymentPanel extends JPanel implements Scrollable {
         }
 
         resetForm();
-        loadPaymentsToTable(paymentService.getAllPaymentsDTO());
+        loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
     }
 
     private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {
@@ -493,9 +515,9 @@ public class PaymentPanel extends JPanel implements Scrollable {
             }
 
             List<Payment> payments = paymentService.findAllByClientId(client.get().getDocumentId());
-            loadPaymentsToTable(payments.stream()
-                    .map(PaymentMapper::toDTO)
-                    .collect(Collectors.toList()));
+            loadPaymentsToTableAsync(() -> payments.stream()
+                    .map(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper::toDTO)
+                    .collect(java.util.stream.Collectors.toList()));
 
             titleCharge.setText("Pago de " + client.get().getName());
 
@@ -536,21 +558,21 @@ public class PaymentPanel extends JPanel implements Scrollable {
 
     private void btnAllActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Todos los Pagos");
-        loadPaymentsToTable(paymentService.getAllPaymentsDTO());
+        loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
     }
 
     private void btnConfirmedActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Pagos Confirmados");
-        loadPaymentsToTable(paymentService.findByStatus(PaymentStatus.CONFIRMADO).stream()
-                .map(PaymentMapper::toDTO)
-                .collect(Collectors.toList()));
+        loadPaymentsToTableAsync(() -> paymentService.findByStatus(PaymentStatus.CONFIRMADO).stream()
+                .map(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper::toDTO)
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     private void btnPendingActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Pagos Pendientes");
-        loadPaymentsToTable(paymentService.findByStatus(PaymentStatus.PENDIENTE).stream()
-                .map(PaymentMapper::toDTO)
-                .collect(Collectors.toList()));
+        loadPaymentsToTableAsync(() -> paymentService.findByStatus(PaymentStatus.PENDIENTE).stream()
+                .map(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper::toDTO)
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     private void btnCleanActionPerformed(java.awt.event.ActionEvent evt) {

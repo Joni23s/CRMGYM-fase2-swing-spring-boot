@@ -33,6 +33,14 @@ public interface HistoricalPlanRepository extends JpaRepository<HistoricalPlan, 
     FROM HistoricalPlan hp
     JOIN FETCH hp.client c
     JOIN FETCH hp.plan p
+""")
+    List<HistoricalPlan> findAllWithDetails();
+
+    @Query("""
+    SELECT hp
+    FROM HistoricalPlan hp
+    JOIN FETCH hp.client c
+    JOIN FETCH hp.plan p
     WHERE c.documentId = :documentId
 """)
     List<HistoricalPlan> findByClientWithDetails(@Param("documentId") String documentId);

@@ -84,6 +84,13 @@ public class HistoricalPlanService {
 
     }
 
+    public List<HistoricalPlanDTO> findAllWithDetails() {
+        return historicalPlanRepository.findAllWithDetails()
+                .stream()
+                .map(HistoricalPlanMapper::toDTO)
+                .toList();
+    }
+
     public List<HistoricalPlanDTO> findByClientWithDetails(String documentId) {
         return  historicalPlanRepository.findByClientWithDetails(documentId)
                 .stream()
