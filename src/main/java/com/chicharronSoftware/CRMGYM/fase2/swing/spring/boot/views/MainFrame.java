@@ -18,9 +18,7 @@ import org.springframework.stereotype.Component;
 
 import javax.swing.*;
 import java.awt.*;
-import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.util.Locale;
+// [MEJORA JUNIOR] Se limpiaron imports que no se utilizaban (como BigDecimal y NumberFormat) para mantener el archivo más limpio.
 
 /**
  * =================================================================================
@@ -179,12 +177,5 @@ public class MainFrame extends JFrame {
         showPanel(new PaymentPanel(paymentService, clientService));
     }
 
-    private String formatCurrency(BigDecimal amount) {
-        if (amount == null)
-            return "$ 0,00";
-        NumberFormat nf = NumberFormat.getNumberInstance(Locale.forLanguageTag("es-AR"));
-        nf.setMinimumFractionDigits(2);
-        nf.setMaximumFractionDigits(2);
-        return "$ " + nf.format(amount);
-    }
+    // [MEJORA JUNIOR] Se eliminó el método 'formatCurrency' ya que no se estaba utilizando en esta clase (código muerto).
 }
