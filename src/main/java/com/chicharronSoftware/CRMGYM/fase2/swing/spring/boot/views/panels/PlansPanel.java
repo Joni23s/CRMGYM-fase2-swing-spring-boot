@@ -2,70 +2,268 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PlanDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PlanMapper;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Plan;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.PlanValidation;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.utils.*;
-import org.springframework.stereotype.Component;
 
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.table.DefaultTableModel;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
-public class PlansPanel extends javax.swing.JPanel {
+public class PlansPanel extends JPanel implements Scrollable {
 
     private DefaultTableModel tableModelPlans;
     private final PlanService planService;
     private final ClientService clientService;
     private final PlanValidation planValidation;
     private boolean isEditMode = false;
-    private Border defaultBorder;
+    private int editingPlanId = -1;
 
+    // Componentes de interfaz
+    private JTextField txtName;
+    private JTextField txtCost;
+    private JSpinner spinnerDays;
+    private JSpinner spinnerHours;
+    private JTextArea txtANotes;
+    private JTable tableListPlans;
 
+    private JLabel titleCharge;
+    private JLabel titleList;
+
+    private JButton btnSave;
+    private JButton btnSearch;
+    private JButton btnClean;
+    private JButton btnActivate;
+    private JButton btnDeactivate;
+
+    private JButton btnAll;
+    private JButton btnActive;
+    private JButton btnInactive;
+    private JButton btnModify;
+
+    @Autowired
     public PlansPanel(PlanService planService, PlanValidation planValidation, ClientService clientService) {
         this.planService = planService;
         this.planValidation = planValidation;
         this.clientService = clientService;
 
-        initComponents();
+        initComponentsHandCoded();
         initPlanTable();
-        initPlanPanel();
+        resetForm();
     }
 
-    /**
-     * Métodos de inicio de componentes
-     */
+    private void initComponentsHandCoded() {
+        setLayout(new BorderLayout(15, 15));
+        setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        // --- 1. FORM PANEL (Oeste) ---
+        JPanel formPanel = new JPanel(new BorderLayout(10, 10));
+        formPanel.setPreferredSize(new Dimension(320, 0));
+
+        JPanel cardPanel = new JPanel(new GridBagLayout());
+        cardPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1, true),
+                "Registro de Plan", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 14), UIManager.getColor("Label.foreground")
+            ),
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
+        ));
+        cardPanel.putClientProperty("FlatLaf.style", "arc: 12; background: $Component.background;");
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(4, 0, 4, 0);
+
+        int row = 0;
+
+        titleCharge = new JLabel("Nuevo Plan");
+        titleCharge.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleCharge.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridy = row++;
+        cardPanel.add(titleCharge, gbc);
+
+        // Form Fields
+        gbc.gridy = row++;
+        cardPanel.add(new JLabel("Nombre del Plan *"), gbc);
+        txtName = new JTextField();
+        txtName.putClientProperty("JTextField.placeholderText", "Nombre del plan");
+        gbc.gridy = row++;
+        cardPanel.add(txtName, gbc);
+
+        gbc.gridy = row++;
+        cardPanel.add(new JLabel("Nº de días semanales *"), gbc);
+        spinnerDays = new JSpinner(new SpinnerNumberModel(0, 0, 7, 1));
+        gbc.gridy = row++;
+        cardPanel.add(spinnerDays, gbc);
+
+        gbc.gridy = row++;
+        cardPanel.add(new JLabel("Nº de horas semanales *"), gbc);
+        spinnerHours = new JSpinner(new SpinnerNumberModel(0, 0, 168, 1));
+        gbc.gridy = row++;
+        cardPanel.add(spinnerHours, gbc);
+
+        gbc.gridy = row++;
+        cardPanel.add(new JLabel("Valor ($) *"), gbc);
+        txtCost = new JTextField();
+        txtCost.putClientProperty("JTextField.placeholderText", "Costo (ej: 2500.50)");
+        gbc.gridy = row++;
+        cardPanel.add(txtCost, gbc);
+
+        gbc.gridy = row++;
+        cardPanel.add(new JLabel("Notas"), gbc);
+        txtANotes = new JTextArea(4, 20);
+        txtANotes.setLineWrap(true);
+        txtANotes.setWrapStyleWord(true);
+        JScrollPane scrollNotes = new JScrollPane(txtANotes);
+        scrollNotes.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1, true));
+        gbc.gridy = row++;
+        cardPanel.add(scrollNotes, gbc);
+
+        // Form Action Buttons
+        JPanel actionPanel = new JPanel(new GridLayout(2, 2, 8, 8));
+        actionPanel.setOpaque(false);
+
+        btnSave = new JButton("💾 Guardar");
+        btnSave.putClientProperty("JButton.buttonType", "accent");
+        btnSave.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSave.addActionListener(e -> btnSaveActionPerformed(e));
+
+        btnSearch = new JButton("🔍 Buscar");
+        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSearch.addActionListener(e -> btnSearchActionPerformed(e));
+
+        btnActivate = new JButton("✅ Activar");
+        btnActivate.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnActivate.addActionListener(e -> btnActivateActionPerformed(e));
+
+        btnDeactivate = new JButton("❌ Desactivar");
+        btnDeactivate.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnDeactivate.addActionListener(e -> btnDeactivateActionPerformed(e));
+
+        actionPanel.add(btnSave);
+        actionPanel.add(btnSearch);
+        actionPanel.add(btnActivate);
+        actionPanel.add(btnDeactivate);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(15, 0, 5, 0);
+        cardPanel.add(actionPanel, gbc);
+
+        btnClean = new JButton("🧹 Limpiar Campos");
+        btnClean.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnClean.addActionListener(e -> btnCleanActionPerformed(e));
+        gbc.gridy = row++;
+        gbc.insets = new Insets(4, 0, 4, 0);
+        cardPanel.add(btnClean, gbc);
+
+        formPanel.add(cardPanel, BorderLayout.CENTER);
+        add(formPanel, BorderLayout.WEST);
+
+        // --- 2. LIST PANEL (Centro) ---
+        JPanel listPanel = new JPanel(new BorderLayout(10, 10));
+
+        JPanel listHeader = new JPanel(new BorderLayout());
+        titleList = new JLabel("Lista de Planes");
+        titleList.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        listHeader.add(titleList, BorderLayout.WEST);
+
+        // Filter actions top-right
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+
+        btnAll = new JButton("Todos");
+        btnAll.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnAll.addActionListener(e -> btnAllActionPerformed(e));
+
+        btnActive = new JButton("Activos");
+        btnActive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnActive.addActionListener(e -> btnActiveActionPerformed(e));
+
+        btnInactive = new JButton("Inactivos");
+        btnInactive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnInactive.addActionListener(e -> btnInactiveActionPerformed(e));
+
+        btnModify = new JButton("📝 Modificar");
+        btnModify.putClientProperty("JButton.buttonType", "accent");
+        btnModify.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnModify.addActionListener(e -> btnModifyActionPerformed(e));
+
+        filterPanel.add(btnAll);
+        filterPanel.add(btnActive);
+        filterPanel.add(btnInactive);
+        filterPanel.add(btnModify);
+        listHeader.add(filterPanel, BorderLayout.EAST);
+
+        listPanel.add(listHeader, BorderLayout.NORTH);
+
+        // Table
+        tableListPlans = new JTable();
+        tableListPlans.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tableListPlans.setShowHorizontalLines(true);
+        tableListPlans.setShowVerticalLines(false);
+
+        JScrollPane scrollPaneTable = new JScrollPane(tableListPlans);
+        scrollPaneTable.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1, true));
+        listPanel.add(scrollPaneTable, BorderLayout.CENTER);
+
+        add(listPanel, BorderLayout.CENTER);
+
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            private Boolean isSmall = null;
+
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                int width = getWidth();
+                boolean shouldBeSmall = width < 850;
+
+                if (isSmall == null || shouldBeSmall != isSmall) {
+                    isSmall = shouldBeSmall;
+                    remove(formPanel);
+                    remove(listPanel);
+                    if (shouldBeSmall) {
+                        formPanel.setPreferredSize(new Dimension(0, 480));
+                        add(formPanel, BorderLayout.NORTH);
+                        add(listPanel, BorderLayout.CENTER);
+                    } else {
+                        formPanel.setPreferredSize(new Dimension(320, 0));
+                        add(formPanel, BorderLayout.WEST);
+                        add(listPanel, BorderLayout.CENTER);
+                    }
+                    revalidate();
+                    repaint();
+                }
+            }
+        });
+    }
 
     private void initPlanTable() {
-        tableModelPlans = new DefaultTableModel();
+        tableModelPlans = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         tableListPlans.setModel(tableModelPlans);
-        // Definir cabeceras de la tabla
         tableModelPlans.setColumnIdentifiers(new Object[]{
-                "Id", "Nombre", "Días habíles", "Horas habíles", "Valor", "Notas", "Estado"
+                "Id", "Nombre", "Días hábiles", "Horas hábiles", "Valor", "Notas", "Estado"
         });
         loadPlansToTable(planService.getAllPlansDTO());
     }
 
-    private void initPlanPanel() {
-        this.defaultBorder = txtName.getBorder();
-        resetForm(); // Limpia los campos del formulario
-    }
-
-    /**
-     * Carga la lista de clientes en la tabla.
-     */
     private void loadPlansToTable(List<PlanDTO> plans) {
-        //Planes desde el service
         tableModelPlans.setRowCount(0);
-
         for (PlanDTO dto : plans) {
             tableModelPlans.addRow(new Object[] {
                     dto.getIdPlan(),
@@ -79,460 +277,41 @@ public class PlansPanel extends javax.swing.JPanel {
         }
     }
 
-    /**
-     * Resetea el formulario a su estado inicial:
-     * - Restaura bordes
-     * - Aplica placeholders
-     * - Reinicia selección del combo
-     */
     private void resetForm() {
-        PromptSupport.setPrompt("Ingrese el nombre *", txtName);
-        PromptSupport.setPrompt("Separe con ( , ) los decimales", txtCost);
+        txtName.setText("");
+        txtCost.setText("");
         txtANotes.setText("");
         spinnerHours.setValue(0);
         spinnerDays.setValue(0);
+        
         titleCharge.setText("Nuevo Plan");
         isEditMode = false;
-        txtANotes.setBorder(defaultBorder);
-        txtCost.setBorder(defaultBorder);
-        txtName.setBorder(defaultBorder);
-        spinnerDays.setBorder(defaultBorder);
-        spinnerHours.setBorder(defaultBorder);
+        editingPlanId = -1;
+        txtName.setEnabled(true);
+        
+        // Restaurar bordes FlatLaf
+        txtName.setBorder(UIManager.getBorder("TextField.border"));
+        txtCost.setBorder(UIManager.getBorder("TextField.border"));
+        txtANotes.setBorder(UIManager.getBorder("TextArea.border"));
+        spinnerDays.setBorder(UIManager.getBorder("Spinner.border"));
+        spinnerHours.setBorder(UIManager.getBorder("Spinner.border"));
     }
 
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        panelMainPlan = new javax.swing.JPanel();
-        panelNewClient = new javax.swing.JPanel();
-        titleCharge = new javax.swing.JLabel();
-        labelName = new javax.swing.JLabel();
-        txtName = new javax.swing.JTextField();
-        labelDaysEnabled = new javax.swing.JLabel();
-        labelHoursEnabled = new javax.swing.JLabel();
-        txtCost = new javax.swing.JTextField();
-        labelCost = new javax.swing.JLabel();
-        labelNotes = new javax.swing.JLabel();
-        btnActivate = new javax.swing.JButton();
-        btnDeactivate = new javax.swing.JButton();
-        btnSave = new javax.swing.JButton();
-        btnSearch = new javax.swing.JButton();
-        btnClean = new javax.swing.JButton();
-        scrollPaneNotes = new javax.swing.JScrollPane();
-        txtANotes = new javax.swing.JTextArea();
-        spinnerHours = new javax.swing.JSpinner();
-        spinnerDays = new javax.swing.JSpinner();
-        panelTable = new javax.swing.JPanel();
-        scrollPaneTable = new javax.swing.JScrollPane();
-        tableListPlans = new javax.swing.JTable();
-        titleList = new javax.swing.JLabel();
-        btnInactive = new javax.swing.JButton();
-        btnActive = new javax.swing.JButton();
-        btnModify = new javax.swing.JButton();
-        btnAll = new javax.swing.JButton();
-        titleMain = new javax.swing.JLabel();
-
-        panelMainPlan.setBackground(new java.awt.Color(102, 102, 102));
-        panelMainPlan.setMinimumSize(new java.awt.Dimension(749, 580));
-        panelMainPlan.setPreferredSize(new java.awt.Dimension(749, 580));
-
-        titleCharge.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        titleCharge.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        titleCharge.setText("Nuevo Plan");
-
-        labelName.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        labelName.setText("Nombre");
-
-        txtName.setText("Ingrese el nombre *");
-
-        labelDaysEnabled.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        labelDaysEnabled.setText("Nº de días a la semana habilitados");
-
-        labelHoursEnabled.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        labelHoursEnabled.setText("Nº de horas a la semana habilitadas");
-
-        txtCost.setText("Separe con ( , ) los decimales");
-
-        labelCost.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        labelCost.setText("Valor ($)");
-
-        labelNotes.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        labelNotes.setText("Notas");
-
-        btnActivate.setText("Activar");
-        btnActivate.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnActivateActionPerformed(evt);
-            }
-        });
-
-        btnDeactivate.setText("Desactivar");
-        btnDeactivate.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnDeactivateActionPerformed(evt);
-            }
-        });
-
-        btnSave.setText("Guardar");
-        btnSave.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSaveActionPerformed(evt);
-            }
-        });
-
-        btnSearch.setText("Buscar");
-        btnSearch.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSearchActionPerformed(evt);
-            }
-        });
-
-        btnClean.setText("Limpiar");
-        btnClean.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnCleanActionPerformed(evt);
-            }
-        });
-
-        txtANotes.setColumns(20);
-        txtANotes.setRows(5);
-        scrollPaneNotes.setViewportView(txtANotes);
-
-        javax.swing.GroupLayout panelNewClientLayout = new javax.swing.GroupLayout(panelNewClient);
-        panelNewClient.setLayout(panelNewClientLayout);
-        panelNewClientLayout.setHorizontalGroup(
-            panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelNewClientLayout.createSequentialGroup()
-                .addGroup(panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panelNewClientLayout.createSequentialGroup()
-                        .addGap(77, 77, 77)
-                        .addComponent(btnClean)
-                        .addGap(67, 67, 67))
-                    .addGroup(panelNewClientLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(titleCharge, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(labelName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(labelDaysEnabled, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(labelHoursEnabled, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(txtName, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(labelCost, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(txtCost, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(labelNotes, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(panelNewClientLayout.createSequentialGroup()
-                                .addGroup(panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(btnActivate, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(btnSave, javax.swing.GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addGroup(panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(btnSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(btnDeactivate, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addComponent(scrollPaneNotes, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)))
-                    .addGroup(panelNewClientLayout.createSequentialGroup()
-                        .addGap(76, 76, 76)
-                        .addGroup(panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(spinnerHours, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(spinnerDays, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
-        );
-        panelNewClientLayout.setVerticalGroup(
-            panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelNewClientLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(titleCharge, javax.swing.GroupLayout.PREFERRED_SIZE, 48, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(labelName)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(txtName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(labelDaysEnabled)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(spinnerDays, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(labelHoursEnabled)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(spinnerHours, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(labelCost)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(txtCost, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(labelNotes)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(scrollPaneNotes, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(panelNewClientLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(btnActivate, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnDeactivate, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(btnClean)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-
-        tableListPlans.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
-        scrollPaneTable.setViewportView(tableListPlans);
-
-        titleList.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        titleList.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        titleList.setText("Lista de Planes");
-
-        btnInactive.setText("Inactivos");
-        btnInactive.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnInactiveActionPerformed(evt);
-            }
-        });
-
-        btnActive.setText("Activos");
-        btnActive.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnActiveActionPerformed(evt);
-            }
-        });
-
-        btnModify.setText("Modificar");
-        btnModify.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnModifyActionPerformed(evt);
-            }
-        });
-
-        btnAll.setText("Todos");
-        btnAll.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnAllActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout panelTableLayout = new javax.swing.GroupLayout(panelTable);
-        panelTable.setLayout(panelTableLayout);
-        panelTableLayout.setHorizontalGroup(
-            panelTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panelTableLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(panelTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(titleList, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(scrollPaneTable, javax.swing.GroupLayout.DEFAULT_SIZE, 481, Short.MAX_VALUE))
-                .addGap(185, 185, 185))
-            .addGroup(panelTableLayout.createSequentialGroup()
-                .addGap(74, 74, 74)
-                .addComponent(btnActive, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(panelTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(btnModify, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(panelTableLayout.createSequentialGroup()
-                        .addComponent(btnInactive, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(btnAll, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        panelTableLayout.setVerticalGroup(
-            panelTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panelTableLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(titleList, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(scrollPaneTable, javax.swing.GroupLayout.PREFERRED_SIZE, 349, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(panelTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnActive, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnInactive, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnAll, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addComponent(btnModify, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(16, Short.MAX_VALUE))
-        );
-
-        titleMain.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        titleMain.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        titleMain.setText("Menú de Planes");
-
-        javax.swing.GroupLayout panelMainPlanLayout = new javax.swing.GroupLayout(panelMainPlan);
-        panelMainPlan.setLayout(panelMainPlanLayout);
-        panelMainPlanLayout.setHorizontalGroup(
-            panelMainPlanLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelMainPlanLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(panelNewClient, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(panelMainPlanLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(panelMainPlanLayout.createSequentialGroup()
-                        .addGap(0, 1, Short.MAX_VALUE)
-                        .addComponent(panelTable, javax.swing.GroupLayout.PREFERRED_SIZE, 496, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(titleMain, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
-        );
-        panelMainPlanLayout.setVerticalGroup(
-            panelMainPlanLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelMainPlanLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(panelMainPlanLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addGroup(panelMainPlanLayout.createSequentialGroup()
-                        .addComponent(titleMain)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(panelTable, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(panelNewClient, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(7, Short.MAX_VALUE))
-        );
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(panelMainPlan, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(panelMainPlan, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-    }// </editor-fold>//GEN-END:initComponents
-
-    private void btnActivateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActivateActionPerformed
-        modifyStatus(true);
-    }//GEN-LAST:event_btnActivateActionPerformed
-
-    private void btnDeactivateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeactivateActionPerformed
-        modifyStatus(false);
-    }//GEN-LAST:event_btnDeactivateActionPerformed
-
-    private void modifyStatus(boolean status) {
-        if (!isEditMode) {
-            JOptionPane.showMessageDialog(this,
-                    "Solo se puede cambiar el estado de un Plan ya creado.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int filaSelected = tableListPlans.getSelectedRow();
-        if (filaSelected == -1) {
-            JOptionPane.showMessageDialog(this,
-                    "Selecciona un plan primero.",
-                    "Advertencia",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        int id = Integer.parseInt(tableListPlans.getValueAt(filaSelected, 0).toString());
-
-        // delegamos toda la lógica al service
-        planService.changeStatusWithClients(id, status);
-
-        JOptionPane.showMessageDialog(this,
-                "Estado actualizado correctamente.",
-                "Éxito",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        loadPlansToTable(planService.findByIsActiveDTO(status));
-    }
-
-
-    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
-        try {
-            // Validaciones obligatorias
-            if (!isFormValid()) {
-                JOptionPane.showMessageDialog(this,
-                        "Verifique los datos ingresados.",
-                        "Validación fallida",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            String name = txtName.getText().trim();
-
-            String costText = txtCost.getText().trim().replace(",",".");
-            if (costText.equals("Separe con ( , ) los decimales") || costText.isEmpty()) {
-                JOptionPane.showMessageDialog(this,
-                        "Ingrese un valor válido para el costo",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            BigDecimal cost = new BigDecimal(costText);
-            String notes = txtANotes.getText().trim();
-            Integer selectedHours = (Integer) spinnerHours.getValue();
-            Integer selectedDays = (Integer) spinnerDays.getValue();
-
-            if (isEditMode) {
-                Integer id = Integer.parseInt(tableListPlans.getValueAt(tableListPlans.getSelectedRow(), 0).toString());
-                Plan plan = new Plan(id, name, selectedDays, selectedHours, cost, notes, true);
-                planService.save(plan);
-            } else {
-                // Crear Plan
-                Plan plan = new Plan(name, selectedDays, selectedHours, cost, notes, true);
-                planService.save(plan);
-            }
-
-            // Guardar
-
-            String msg = isEditMode ? "Plan actualizado correctamente." : "Plan guardado correctamente.";
-            JOptionPane.showMessageDialog(this,
-                    msg,
-                    "Éxito",
-                    JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "El valor ingresado no es válido.",
-                    "Error de formato",
-                    JOptionPane.ERROR_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Error al guardar el plan: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-        }
-
-        // Reiniciar estado
-        resetForm();
-        titleCharge.setText("Nuevo Plan");
-        isEditMode = false;
-        titleList.setText("Lista de Planes");
-        loadPlansToTable(planService.getAllPlansDTO());
-    }//GEN-LAST:event_btnSaveActionPerformed
-
-    /**
-     * Valida el formulario de carga de clientes.
-     * Marca los campos con borde rojo si hay errores.
-     */
     private boolean isFormValid() {
         boolean valid = true;
 
-        // Validación de nombre
         if (!isEditMode) {
             String name = txtName.getText().trim();
-            if (name.isEmpty() || name.equals("Ingrese el nombre *") || !planValidation.isValidName(name)) {
+            if (name.isEmpty() || !planValidation.isValidName(name)) {
                 txtName.setBorder(BorderFactory.createLineBorder(Color.RED));
                 valid = false;
             } else {
-                txtName.setBorder(defaultBorder);
+                txtName.setBorder(UIManager.getBorder("TextField.border"));
             }
         }
 
-        // Validación de costo (con detección de placeholder)
         String costText = txtCost.getText().trim();
-        if (costText.isEmpty() || costText.equals("Separe con ( . ) los decimales")) {
+        if (costText.isEmpty()) {
             txtCost.setBorder(BorderFactory.createLineBorder(Color.RED));
             valid = false;
         } else {
@@ -542,7 +321,7 @@ public class PlansPanel extends javax.swing.JPanel {
                     txtCost.setBorder(BorderFactory.createLineBorder(Color.RED));
                     valid = false;
                 } else {
-                    txtCost.setBorder(defaultBorder);
+                    txtCost.setBorder(UIManager.getBorder("TextField.border"));
                 }
             } catch (NumberFormatException e) {
                 txtCost.setBorder(BorderFactory.createLineBorder(Color.RED));
@@ -550,13 +329,12 @@ public class PlansPanel extends javax.swing.JPanel {
             }
         }
 
-        // Validaciones de spinner (se mantienen igual)
         int days = (int) spinnerDays.getValue();
         if (!planValidation.isValidDays(days)) {
             spinnerDays.setBorder(BorderFactory.createLineBorder(Color.RED));
             valid = false;
         } else {
-            spinnerDays.setBorder(defaultBorder);
+            spinnerDays.setBorder(UIManager.getBorder("Spinner.border"));
         }
 
         int hours = (int) spinnerHours.getValue();
@@ -564,129 +342,180 @@ public class PlansPanel extends javax.swing.JPanel {
             spinnerHours.setBorder(BorderFactory.createLineBorder(Color.RED));
             valid = false;
         } else {
-            spinnerHours.setBorder(defaultBorder);
+            spinnerHours.setBorder(UIManager.getBorder("Spinner.border"));
         }
 
         return valid;
     }
 
-    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
-        Set<Plan> plans = new HashSet<>();
-
-        // Buscar por nombre
-        String name = txtName.getText().trim();
-        if (!name.isEmpty() && !name.equals("Ingrese el nombre *")) {
-            plans.addAll(Collections.singleton(planService.findByNamePlanIgnoreCase(name).get()));
-        }
-
-        int hours = (int) spinnerHours.getValue();
-        if  (hours != 0 && hours > -1) {
-            plans.addAll(planService.findByHoursEnabled(hours));
-        }
-
-        int days = (int) spinnerDays.getValue();
-        if  (days != 0 && days > -1) {
-            plans.addAll(planService.findByDaysEnabled(hours));
-        }
-
+    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {
         try {
-            // Crear BigDecimal directamente desde String (evita problemas de precisión con double)
-            BigDecimal cost = new BigDecimal(txtCost.getText().trim());
-
-            // Comparación correcta con BigDecimal.ZERO
-            if (cost.compareTo(BigDecimal.ZERO) != 0) {
-                plans.addAll(planService.findByValue(cost));
+            if (!isFormValid()) {
+                JOptionPane.showMessageDialog(this, "Verifique los datos ingresados.", "Validación fallida", JOptionPane.WARNING_MESSAGE);
+                return;
             }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null,
-                    "Ingrese un valor numérico válido",
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            
+            String name = txtName.getText().trim();
+            String costText = txtCost.getText().trim().replace(",", ".");
+            BigDecimal cost = new BigDecimal(costText);
+            String notes = txtANotes.getText().trim();
+            Integer selectedHours = (Integer) spinnerHours.getValue();
+            Integer selectedDays = (Integer) spinnerDays.getValue();
+
+            if (isEditMode) {
+                Plan plan = new Plan(editingPlanId, name, selectedDays, selectedHours, cost, notes, true);
+                planService.save(plan);
+            } else {
+                Plan plan = new Plan(name, selectedDays, selectedHours, cost, notes, true);
+                planService.save(plan);
+            }
+
+            String msg = isEditMode ? "Plan actualizado correctamente." : "Plan guardado correctamente.";
+            JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "El valor ingresado no es válido.", "Error de formato", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error al guardar el plan: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
 
-        // Mostrar resultados
-        titleList.setText("Lista de Planes: Buscados");
-        loadPlansToTable(plans.stream()
-            .map(PlanMapper::toDTO)
-            .collect(Collectors.toList()));
-    }//GEN-LAST:event_btnSearchActionPerformed
-
-    private void btnCleanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCleanActionPerformed
         resetForm();
-    }//GEN-LAST:event_btnCleanActionPerformed
+        loadPlansToTable(planService.getAllPlansDTO());
+    }
 
-    private void btnInactiveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInactiveActionPerformed
-        titleList.setText("Lista de Planes: Inactivos");
-        loadPlansToTable(planService.findByIsActiveDTO(false));
-    }//GEN-LAST:event_btnInactiveActionPerformed
-
-    private void btnActiveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActiveActionPerformed
-        titleList.setText("Lista de Planes: Activos");
-        loadPlansToTable(planService.findByIsActiveDTO(true));
-    }//GEN-LAST:event_btnActiveActionPerformed
-
-    private void btnModifyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnModifyActionPerformed
+    private void btnModifyActionPerformed(java.awt.event.ActionEvent evt) {
         int filaSelected = tableListPlans.getSelectedRow();
-
         if (filaSelected == -1) {
-            JOptionPane.showMessageDialog(this,
-                "Selecciona un plan primero.",
-                "Advertencia",
-                JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecciona un plan primero.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        // Obtener datos de la fila seleccionada
+
+        String id = tableListPlans.getValueAt(filaSelected, 0).toString();
         String name = tableListPlans.getValueAt(filaSelected, 1).toString();
         String days = tableListPlans.getValueAt(filaSelected, 2).toString();
         String hours = tableListPlans.getValueAt(filaSelected, 3).toString();
         String cost = tableListPlans.getValueAt(filaSelected, 4).toString();
-        String notes = tableListPlans.getValueAt(filaSelected, 5).toString();
+        String notes = tableListPlans.getValueAt(filaSelected, 5) != null ? tableListPlans.getValueAt(filaSelected, 5).toString() : "";
 
-        // Cargar en los campos del formulario
         txtName.setText(name);
         spinnerDays.setValue(Integer.parseInt(days));
         spinnerHours.setValue(Integer.parseInt(hours));
         txtCost.setText(cost);
         txtANotes.setText(notes);
 
-        // Activar modo edición
         isEditMode = true;
+        editingPlanId = Integer.parseInt(id);
         titleCharge.setText("Modificar Plan");
-    }//GEN-LAST:event_btnModifyActionPerformed
+    }
 
-    private void btnAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAllActionPerformed
+    private void modifyStatus(boolean status) {
+        int filaSelected = tableListPlans.getSelectedRow();
+        if (filaSelected == -1) {
+            JOptionPane.showMessageDialog(this, "Selecciona un plan primero.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int id = Integer.parseInt(tableListPlans.getValueAt(filaSelected, 0).toString());
+        planService.changeStatusWithClients(id, status);
+
+        JOptionPane.showMessageDialog(this, "Estado actualizado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        resetForm();
+        loadPlansToTable(planService.getAllPlansDTO());
+    }
+
+    private void btnActivateActionPerformed(java.awt.event.ActionEvent evt) {
+        modifyStatus(true);
+    }
+
+    private void btnDeactivateActionPerformed(java.awt.event.ActionEvent evt) {
+        modifyStatus(false);
+    }
+
+    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {
+        Set<Plan> plans = new HashSet<>();
+
+        String name = txtName.getText().trim();
+        if (!name.isEmpty()) {
+            planService.findByNamePlanIgnoreCase(name).ifPresent(plans::add);
+        }
+
+        int hours = (int) spinnerHours.getValue();
+        if (hours != 0) {
+            plans.addAll(planService.findByHoursEnabled(hours));
+        }
+
+        int days = (int) spinnerDays.getValue();
+        if (days != 0) {
+            // FIX: usa 'days' en vez de 'hours'
+            plans.addAll(planService.findByDaysEnabled(days));
+        }
+
+        String costText = txtCost.getText().trim();
+        if (!costText.isEmpty()) {
+            try {
+                BigDecimal cost = new BigDecimal(costText.replace(",", "."));
+                if (cost.compareTo(BigDecimal.ZERO) != 0) {
+                    plans.addAll(planService.findByValue(cost));
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+
+        titleList.setText("Lista de Planes: Buscados");
+        loadPlansToTable(plans.stream()
+                .map(PlanMapper::toDTO)
+                .collect(Collectors.toList()));
+    }
+
+    private void btnCleanActionPerformed(java.awt.event.ActionEvent evt) {
+        resetForm();
+    }
+
+    private void btnAllActionPerformed(java.awt.event.ActionEvent evt) {
         titleList.setText("Lista de Planes");
         loadPlansToTable(planService.getAllPlansDTO());
-    }//GEN-LAST:event_btnAllActionPerformed
+    }
 
+    private void btnActiveActionPerformed(java.awt.event.ActionEvent evt) {
+        titleList.setText("Lista de Planes: Activos");
+        loadPlansToTable(planService.findByIsActiveDTO(true));
+    }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnActivate;
-    private javax.swing.JButton btnActive;
-    private javax.swing.JButton btnAll;
-    private javax.swing.JButton btnClean;
-    private javax.swing.JButton btnDeactivate;
-    private javax.swing.JButton btnInactive;
-    private javax.swing.JButton btnModify;
-    private javax.swing.JButton btnSave;
-    private javax.swing.JButton btnSearch;
-    private javax.swing.JLabel labelCost;
-    private javax.swing.JLabel labelDaysEnabled;
-    private javax.swing.JLabel labelHoursEnabled;
-    private javax.swing.JLabel labelName;
-    private javax.swing.JLabel labelNotes;
-    private javax.swing.JPanel panelMainPlan;
-    private javax.swing.JPanel panelNewClient;
-    private javax.swing.JPanel panelTable;
-    private javax.swing.JScrollPane scrollPaneNotes;
-    private javax.swing.JScrollPane scrollPaneTable;
-    private javax.swing.JSpinner spinnerDays;
-    private javax.swing.JSpinner spinnerHours;
-    private javax.swing.JTable tableListPlans;
-    private javax.swing.JLabel titleCharge;
-    private javax.swing.JLabel titleList;
-    private javax.swing.JLabel titleMain;
-    private javax.swing.JTextArea txtANotes;
-    private javax.swing.JTextField txtCost;
-    private javax.swing.JTextField txtName;
-    // End of variables declaration//GEN-END:variables
+    private void btnInactiveActionPerformed(java.awt.event.ActionEvent evt) {
+        titleList.setText("Lista de Planes: Inactivos");
+        loadPlansToTable(planService.findByIsActiveDTO(false));
+    }
+
+    // =========================================================================
+    // IMPLEMENTACIÓN DE Scrollable: Permite scroll vertical adaptativo
+    // =========================================================================
+    @Override
+    public Dimension getPreferredScrollableViewportSize() {
+        return getPreferredSize();
+    }
+
+    @Override
+    public int getScrollableUnitIncrement(java.awt.Rectangle visibleRect, int orientation, int direction) {
+        return 20;
+    }
+
+    @Override
+    public int getScrollableBlockIncrement(java.awt.Rectangle visibleRect, int orientation, int direction) {
+        return 80;
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportWidth() {
+        return true; // Llenar el ancho del viewport
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportHeight() {
+        if (getWidth() < 850) {
+            return false;
+        }
+        if (getParent() instanceof JViewport) {
+            return getPreferredSize().height <= ((JViewport) getParent()).getHeight();
+        }
+        return true;
+    }
 }

@@ -100,6 +100,7 @@ CREATE TABLE `payments` (
   `document_id` int(11) NOT NULL,
   PRIMARY KEY (`payment_id`),
   KEY `FKbg5a1ippx6sq4nr4w0ekfokco` (`document_id`),
+  UNIQUE KEY `uc_client_period` (`document_id`,`period`),
   CONSTRAINT `FKbg5a1ippx6sq4nr4w0ekfokco` FOREIGN KEY (`document_id`) REFERENCES `clients` (`document_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_spanish2_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

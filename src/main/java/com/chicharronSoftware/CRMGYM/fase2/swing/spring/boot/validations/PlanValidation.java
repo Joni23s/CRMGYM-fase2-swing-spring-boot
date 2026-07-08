@@ -5,11 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.Scanner;
-
 @Component
 public class PlanValidation {
-    private final Scanner console = new Scanner(System.in);
     private final PlanService planService;
 
     @Autowired

@@ -1,67 +1,296 @@
-
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.HistoricalPlanDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PlanDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
-
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.util.*;
-import java.util.List;
-
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.HistoricalPlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.utils.PromptSupport;
-import org.springframework.stereotype.Component;
 
 import javax.swing.*;
-import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
+import java.util.*;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
-public class HistoricalPanel extends JPanel {
+public class HistoricalPanel extends JPanel implements Scrollable {
 
     private DefaultTableModel tableModelHistorical;
     private final ClientService clientService;
     private final PlanService planService;
     private final HistoricalPlanService historicalPlanService;
-    private Border defaultBorder;
 
+    // Componentes de interfaz
+    private JTextField txtName;
+    private JTextField txtLastName;
+    private JTextField txtDni;
+    private JTextField txtPhone1;
+    private JComboBox<String> comboBoxPlan;
+    private JTable tableListClients;
+
+    private JRadioButton btnClientActive;
+    private JRadioButton btnClientInactive;
+    private JRadioButton btnPlanActive;
+    private JRadioButton btnPlanInactive;
+
+    private JRadioButton btnName;
+    private JRadioButton btnLastName;
+    private JRadioButton btnDni;
+    private JRadioButton btnPhone;
+    private JRadioButton btnPlan;
+
+    private JLabel titleCharge;
+    private JLabel titleList;
+
+    private JButton btnSearch;
+    private JButton btnCleanPanels;
+    private JButton btnSelect;
+    private JButton btnCleanTable;
+
+    @Autowired
     public HistoricalPanel(ClientService clientService, PlanService planService, HistoricalPlanService historicalPlanService) {
         this.clientService = clientService;
         this.planService = planService;
         this.historicalPlanService = historicalPlanService;
-        initComponents();
+
+        initComponentsHandCoded();
         initHistoricalPlanTable();
         initRadioButtonsClients();
         initRadioButtonsPlans();
+        resetForm();
+    }
+
+    private void initComponentsHandCoded() {
+        setLayout(new BorderLayout(15, 15));
+        setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        // --- 1. SEARCH/FILTER PANEL (Oeste) ---
+        JPanel formPanel = new JPanel(new BorderLayout(10, 10));
+        formPanel.setPreferredSize(new Dimension(340, 0));
+
+        JPanel cardPanel = new JPanel(new GridBagLayout());
+        cardPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1, true),
+                "Filtros de Búsqueda", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 14), UIManager.getColor("Label.foreground")
+            ),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+        cardPanel.putClientProperty("FlatLaf.style", "arc: 12; background: $Component.background;");
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(2, 0, 2, 0);
+
+        int row = 0;
+
+        titleCharge = new JLabel("Búsqueda");
+        titleCharge.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleCharge.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridy = row++;
+        cardPanel.add(titleCharge, gbc);
+
+        // Section: Client Status
+        JLabel titleClient = new JLabel("Por Estado de Cliente");
+        titleClient.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        gbc.gridy = row++;
+        gbc.insets = new Insets(8, 0, 2, 0);
+        cardPanel.add(titleClient, gbc);
+
+        JPanel clientStatusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        clientStatusPanel.setOpaque(false);
+        btnClientActive = new JRadioButton("Activo");
+        btnClientActive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnClientInactive = new JRadioButton("Inactivo");
+        btnClientInactive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        clientStatusPanel.add(btnClientActive);
+        clientStatusPanel.add(btnClientInactive);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(2, 0, 2, 0);
+        cardPanel.add(clientStatusPanel, gbc);
+
+        // Fields with "Use" check
+        gbc.gridy = row++;
+        cardPanel.add(createFieldHeader("Nombre", btnName = new JRadioButton("Usar")), gbc);
+        txtName = new JTextField();
+        txtName.putClientProperty("JTextField.placeholderText", "Nombre a buscar");
+        gbc.gridy = row++;
+        cardPanel.add(txtName, gbc);
+
+        gbc.gridy = row++;
+        cardPanel.add(createFieldHeader("Apellido", btnLastName = new JRadioButton("Usar")), gbc);
+        txtLastName = new JTextField();
+        txtLastName.putClientProperty("JTextField.placeholderText", "Apellido a buscar");
+        gbc.gridy = row++;
+        cardPanel.add(txtLastName, gbc);
+
+        gbc.gridy = row++;
+        cardPanel.add(createFieldHeader("DNI", btnDni = new JRadioButton("Usar")), gbc);
+        txtDni = new JTextField();
+        txtDni.putClientProperty("JTextField.placeholderText", "DNI del cliente");
+        gbc.gridy = row++;
+        cardPanel.add(txtDni, gbc);
+
+        gbc.gridy = row++;
+        cardPanel.add(createFieldHeader("Celular", btnPhone = new JRadioButton("Usar")), gbc);
+        txtPhone1 = new JTextField();
+        txtPhone1.putClientProperty("JTextField.placeholderText", "Número de celular");
+        gbc.gridy = row++;
+        cardPanel.add(txtPhone1, gbc);
+
+        // Section: Plan Status & ComboBox
+        JLabel titlePlan = new JLabel("Por Plan");
+        titlePlan.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        gbc.gridy = row++;
+        gbc.insets = new Insets(10, 0, 2, 0);
+        cardPanel.add(titlePlan, gbc);
+
+        JPanel planStatusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        planStatusPanel.setOpaque(false);
+        btnPlanActive = new JRadioButton("Plan Activo");
+        btnPlanActive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnPlanInactive = new JRadioButton("Plan Inactivo");
+        btnPlanInactive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        planStatusPanel.add(btnPlanActive);
+        planStatusPanel.add(btnPlanInactive);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(2, 0, 2, 0);
+        cardPanel.add(planStatusPanel, gbc);
+
+        gbc.gridy = row++;
+        cardPanel.add(createFieldHeader("Seleccionar Plan", btnPlan = new JRadioButton("Usar")), gbc);
+        comboBoxPlan = new JComboBox<>();
+        gbc.gridy = row++;
+        cardPanel.add(comboBoxPlan, gbc);
+
+        // Action Buttons
+        JPanel actionPanel = new JPanel(new GridLayout(1, 2, 8, 8));
+        actionPanel.setOpaque(false);
+
+        btnSearch = new JButton("🔍 Buscar");
+        btnSearch.putClientProperty("JButton.buttonType", "accent");
+        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSearch.addActionListener(e -> btnSearchActionPerformed(e));
+
+        btnCleanPanels = new JButton("🧹 Limpiar");
+        btnCleanPanels.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCleanPanels.addActionListener(e -> btnCleanPanelsActionPerformed(e));
+
+        actionPanel.add(btnCleanPanels);
+        actionPanel.add(btnSearch);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(15, 0, 0, 0);
+        cardPanel.add(actionPanel, gbc);
+
+        formPanel.add(cardPanel, BorderLayout.CENTER);
+        add(formPanel, BorderLayout.WEST);
+
+        // --- 2. LIST PANEL (Centro) ---
+        JPanel listPanel = new JPanel(new BorderLayout(10, 10));
+
+        JPanel listHeader = new JPanel(new BorderLayout());
+        titleList = new JLabel("Resultados");
+        titleList.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        listHeader.add(titleList, BorderLayout.WEST);
+
+        JPanel tableActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        
+        btnCleanTable = new JButton("🧹 Limpiar Tabla");
+        btnCleanTable.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCleanTable.addActionListener(e -> btnCleanTableActionPerformed(e));
+        
+        btnSelect = new JButton("🔎 Seleccionar Cliente");
+        btnSelect.putClientProperty("JButton.buttonType", "accent");
+        btnSelect.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSelect.addActionListener(e -> btnSelectActionPerformed(e));
+        
+        tableActions.add(btnCleanTable);
+        tableActions.add(btnSelect);
+        listHeader.add(tableActions, BorderLayout.EAST);
+
+        listPanel.add(listHeader, BorderLayout.NORTH);
+
+        // Table
+        tableListClients = new JTable();
+        tableListClients.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tableListClients.setShowHorizontalLines(true);
+        tableListClients.setShowVerticalLines(false);
+
+        JScrollPane scrollPaneTable = new JScrollPane(tableListClients);
+        scrollPaneTable.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1, true));
+        listPanel.add(scrollPaneTable, BorderLayout.CENTER);
+
+        add(listPanel, BorderLayout.CENTER);
+
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            private Boolean isSmall = null;
+
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                int width = getWidth();
+                boolean shouldBeSmall = width < 850;
+
+                if (isSmall == null || shouldBeSmall != isSmall) {
+                    isSmall = shouldBeSmall;
+                    remove(formPanel);
+                    remove(listPanel);
+                    if (shouldBeSmall) {
+                        formPanel.setPreferredSize(new Dimension(0, 480));
+                        add(formPanel, BorderLayout.NORTH);
+                        add(listPanel, BorderLayout.CENTER);
+                    } else {
+                        formPanel.setPreferredSize(new Dimension(340, 0));
+                        add(formPanel, BorderLayout.WEST);
+                        add(listPanel, BorderLayout.CENTER);
+                    }
+                    revalidate();
+                    repaint();
+                }
+            }
+        });
+    }
+
+    private JPanel createFieldHeader(String labelText, JRadioButton radioButton) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        panel.add(label, BorderLayout.WEST);
+        radioButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        panel.add(radioButton, BorderLayout.EAST);
+        return panel;
     }
 
     private void initHistoricalPlanTable() {
-        tableModelHistorical = new DefaultTableModel();
+        tableModelHistorical = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         tableListClients.setModel(tableModelHistorical);
-        // Definir cabeceras de la tabla
         tableModelHistorical.setColumnIdentifiers(new Object[]{
                 "Id", "Inicio", "Fin", "Estado", "DNI", "Cliente", "Plan"
         });
         loadHistoricalPlanToTable(clientService.findAll());
     }
 
-    /**
-     * Carga la lista de clientes en la tabla.
-     */
     private void loadHistoricalPlanToTable(List<Client> clients) {
-        //Clientes desde el service
         tableModelHistorical.setRowCount(0);
-        List<HistoricalPlanDTO> historicalPlanDTOS = clients.stream()
-                .flatMap(client -> historicalPlanService
-                        .findByClientWithDetails(client.getDocumentId().toString()).stream())
-                .toList();
-
+        // [MEJORA JUNIOR] Evitamos el problema N+1 haciendo una sola consulta masiva
+        // en lugar de iterar cliente por cliente (lo que hacía una consulta por cada uno).
+        List<HistoricalPlanDTO> historicalPlanDTOS = historicalPlanService.findByClientsWithDetails(clients);
 
         for (HistoricalPlanDTO dto : historicalPlanDTOS) {
             tableModelHistorical.addRow(new Object[] {
@@ -85,13 +314,13 @@ public class HistoricalPanel extends JPanel {
 
         btnPlanActive.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
-                loadPlansToComboBox(true); // Activo
+                loadPlansToComboBox(true);
             }
         });
 
         btnPlanInactive.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
-                loadPlansToComboBox(false); // Inactivo
+                loadPlansToComboBox(false);
             }
         });
     }
@@ -114,10 +343,6 @@ public class HistoricalPanel extends JPanel {
         });
     }
 
-    /**
-     * Carga todos los planes disponibles en el comboBox.
-     * El primer ítem es un texto fijo obligatorio.
-     */
     private void loadPlansToComboBox(boolean active) {
         comboBoxPlan.removeAllItems();
         comboBoxPlan.addItem("Seleccione un Plan *");
@@ -131,394 +356,69 @@ public class HistoricalPanel extends JPanel {
     }
 
     private void resetForm() {
-        PromptSupport.setPrompt("Ingrese el DNI *", txtDni);
-        PromptSupport.setPrompt("Ingrese el nombre *", txtName);
-        PromptSupport.setPrompt("Ingrese el apellido *", txtLastName);
-        PromptSupport.setPrompt("Ingrese el mail", txtMail);
-        PromptSupport.setPrompt("Ingrese el celular", txtPhone);
-        comboBoxPlan.setSelectedIndex(0);
-        titleCharge.setText("Nuevo Cliente");
-        txtDni.setBorder(defaultBorder);
-        txtName.setBorder(defaultBorder);
-        txtLastName.setBorder(defaultBorder);
-        txtMail.setBorder(defaultBorder);
-        txtPhone.setBorder(defaultBorder);
-        comboBoxPlan.setBorder(defaultBorder);
+        txtName.setText("");
+        txtLastName.setText("");
+        txtDni.setText("");
+        txtPhone1.setText("");
+        
+        btnClientActive.setSelected(false);
+        btnClientInactive.setSelected(false);
+        btnPlanActive.setSelected(true);
+        
+        btnName.setSelected(false);
+        btnLastName.setSelected(false);
+        btnDni.setSelected(false);
+        btnPhone.setSelected(false);
+        btnPlan.setSelected(false);
+        
+        if (comboBoxPlan.getItemCount() > 0) {
+            comboBoxPlan.setSelectedIndex(0);
+        }
+        
+        titleCharge.setText("Búsqueda");
+
+        // Restaurar bordes FlatLaf
+        txtName.setBorder(UIManager.getBorder("TextField.border"));
+        txtLastName.setBorder(UIManager.getBorder("TextField.border"));
+        txtDni.setBorder(UIManager.getBorder("TextField.border"));
+        txtPhone1.setBorder(UIManager.getBorder("TextField.border"));
+        comboBoxPlan.setBorder(UIManager.getBorder("ComboBox.border"));
     }
 
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        txtMail = new JTextField();
-        txtPhone = new JTextField();
-        labelPhone = new JLabel();
-        labelMail = new JLabel();
-        jRadioButton7 = new JRadioButton();
-        jRadioButton9 = new JRadioButton();
-        titleMain = new JLabel();
-        panelNewClient = new JPanel();
-        titleCharge = new JLabel();
-        labelName = new JLabel();
-        txtName = new JTextField();
-        labelLastName = new JLabel();
-        txtLastName = new JTextField();
-        labelDni = new JLabel();
-        txtDni = new JTextField();
-        labelPlan = new JLabel();
-        btnSearch = new JButton();
-        btnCleanPanels = new JButton();
-        comboBoxPlan = new JComboBox<>();
-        btnClientActive = new JRadioButton();
-        btnClientInactive = new JRadioButton();
-        titleClient = new JLabel();
-        titlePlan = new JLabel();
-        btnPlanActive = new JRadioButton();
-        btnPlanInactive = new JRadioButton();
-        labelPhone1 = new JLabel();
-        txtPhone1 = new JTextField();
-        btnName = new JRadioButton();
-        btnLastName = new JRadioButton();
-        btnDni = new JRadioButton();
-        btnPhone = new JRadioButton();
-        btnPlan = new JRadioButton();
-        panelTable = new JPanel();
-        scrollPaneTable = new JScrollPane();
-        tableListClients = new JTable();
-        titleList = new JLabel();
-        btnSelect = new JButton();
-        btnCleanTable = new JButton();
-
-        txtMail.setText("Ingrese el mail");
-
-        txtPhone.setText("Ingrese el celular");
-
-        labelPhone.setHorizontalAlignment(SwingConstants.CENTER);
-        labelPhone.setText("Celular");
-
-        labelMail.setHorizontalAlignment(SwingConstants.CENTER);
-        labelMail.setText("Mail");
-
-        jRadioButton7.setText("Usar");
-
-        jRadioButton9.setText("Usar");
-
-        setBackground(new Color(120, 120, 120));
-        setMinimumSize(new Dimension(749, 580));
-
-        titleMain.setFont(new Font("Segoe UI", 1, 24)); // NOI18N
-        titleMain.setHorizontalAlignment(SwingConstants.CENTER);
-        titleMain.setText("Historial");
-
-        titleCharge.setFont(new Font("Segoe UI", 1, 24)); // NOI18N
-        titleCharge.setHorizontalAlignment(SwingConstants.CENTER);
-        titleCharge.setText("Busqueda");
-
-        labelName.setHorizontalAlignment(SwingConstants.CENTER);
-        labelName.setText("Nombre");
-
-        txtName.setText("Ingrese el nombre *");
-
-        labelLastName.setHorizontalAlignment(SwingConstants.CENTER);
-        labelLastName.setText("Apellido");
-
-        txtLastName.setText("Ingrese el apellido *");
-
-        labelDni.setHorizontalAlignment(SwingConstants.CENTER);
-        labelDni.setText("DNI");
-
-        txtDni.setText("Ingrese el DNI *");
-
-        labelPlan.setHorizontalAlignment(SwingConstants.CENTER);
-        labelPlan.setText("Seleccione el plan");
-
-        btnSearch.setText("Buscar");
-        btnSearch.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                btnSearchActionPerformed(evt);
-            }
-        });
-
-        btnCleanPanels.setText("Limpiar");
-        btnCleanPanels.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                btnCleanPanelsActionPerformed(evt);
-            }
-        });
-
-        comboBoxPlan.setModel(new DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
-        btnClientActive.setText("Activo");
-
-        btnClientInactive.setText("Inactivo");
-
-        titleClient.setFont(new Font("Roboto", 1, 14)); // NOI18N
-        titleClient.setHorizontalAlignment(SwingConstants.CENTER);
-        titleClient.setText("Por Cliente");
-
-        titlePlan.setFont(new Font("Roboto", 1, 14)); // NOI18N
-        titlePlan.setHorizontalAlignment(SwingConstants.CENTER);
-        titlePlan.setText("Por Plan");
-
-        btnPlanActive.setText("Activo");
-
-        btnPlanInactive.setText("Inactivo");
-
-        labelPhone1.setHorizontalAlignment(SwingConstants.CENTER);
-        labelPhone1.setText("Celular");
-
-        txtPhone1.setText("Ingrese el celular");
-
-        btnName.setText("Usar");
-
-        btnLastName.setText("Usar");
-
-        btnDni.setText("Usar");
-
-        btnPhone.setText("Usar");
-
-        btnPlan.setText("Usar");
-
-        GroupLayout panelNewClientLayout = new GroupLayout(panelNewClient);
-        panelNewClient.setLayout(panelNewClientLayout);
-        panelNewClientLayout.setHorizontalGroup(
-            panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(panelNewClientLayout.createSequentialGroup()
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                    .addComponent(titleClient, GroupLayout.Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(GroupLayout.Alignment.TRAILING, panelNewClientLayout.createSequentialGroup()
-                        .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                            .addGroup(panelNewClientLayout.createSequentialGroup()
-                                .addGap(0, 0, Short.MAX_VALUE)
-                                .addComponent(btnClientActive))
-                            .addGroup(panelNewClientLayout.createSequentialGroup()
-                                .addComponent(labelName, GroupLayout.PREFERRED_SIZE, 91, GroupLayout.PREFERRED_SIZE)
-                                .addGap(0, 0, Short.MAX_VALUE)))
-                        .addGap(18, 18, 18)
-                        .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                            .addGroup(panelNewClientLayout.createSequentialGroup()
-                                .addComponent(btnClientInactive)
-                                .addGap(34, 34, 34))
-                            .addComponent(btnName, GroupLayout.Alignment.TRAILING)))
-                    .addGroup(panelNewClientLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                            .addGroup(GroupLayout.Alignment.TRAILING, panelNewClientLayout.createSequentialGroup()
-                                .addGap(0, 0, Short.MAX_VALUE)
-                                .addComponent(btnCleanPanels, GroupLayout.PREFERRED_SIZE, 95, GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 95, GroupLayout.PREFERRED_SIZE))
-                            .addComponent(titleCharge, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(txtDni, GroupLayout.Alignment.TRAILING)
-                            .addComponent(txtName, GroupLayout.Alignment.TRAILING)
-                            .addComponent(txtLastName, GroupLayout.Alignment.TRAILING)
-                            .addComponent(comboBoxPlan, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(txtPhone1, GroupLayout.Alignment.TRAILING)
-                            .addGroup(panelNewClientLayout.createSequentialGroup()
-                                .addComponent(labelPlan, GroupLayout.PREFERRED_SIZE, 106, GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnPlan))
-                            .addGroup(panelNewClientLayout.createSequentialGroup()
-                                .addComponent(labelLastName, GroupLayout.PREFERRED_SIZE, 90, GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnLastName))
-                            .addGroup(panelNewClientLayout.createSequentialGroup()
-                                .addComponent(labelDni, GroupLayout.PREFERRED_SIZE, 88, GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnDni))
-                            .addGroup(panelNewClientLayout.createSequentialGroup()
-                                .addComponent(labelPhone1, GroupLayout.PREFERRED_SIZE, 94, GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnPhone))
-                            .addGroup(GroupLayout.Alignment.TRAILING, panelNewClientLayout.createSequentialGroup()
-                                .addGap(40, 40, 40)
-                                .addComponent(btnPlanActive)
-                                .addGap(18, 18, 18)
-                                .addComponent(btnPlanInactive)
-                                .addGap(36, 36, 36))
-                            .addComponent(titlePlan, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                .addContainerGap())
-        );
-        panelNewClientLayout.setVerticalGroup(
-            panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(panelNewClientLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(titleCharge, GroupLayout.PREFERRED_SIZE, 48, GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(titleClient)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnClientActive)
-                    .addComponent(btnClientInactive))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                    .addComponent(labelName)
-                    .addComponent(btnName))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                    .addComponent(labelLastName)
-                    .addComponent(btnLastName))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtLastName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                    .addComponent(labelDni)
-                    .addComponent(btnDni))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtDni, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                    .addComponent(labelPhone1)
-                    .addComponent(btnPhone))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtPhone1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(titlePlan)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnPlanActive)
-                    .addComponent(btnPlanInactive))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                    .addComponent(labelPlan)
-                    .addComponent(btnPlan))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(comboBoxPlan, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                .addGap(24, 24, 24)
-                .addGroup(panelNewClientLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnCleanPanels, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18))
-        );
-
-        tableListClients.setModel(new DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
-        scrollPaneTable.setViewportView(tableListClients);
-
-        titleList.setFont(new Font("Segoe UI", 1, 24)); // NOI18N
-        titleList.setHorizontalAlignment(SwingConstants.CENTER);
-        titleList.setText("Resultados");
-
-        btnSelect.setText("Seleccionar");
-        btnSelect.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                btnSelectActionPerformed(evt);
-            }
-        });
-
-        btnCleanTable.setText("Limpiar");
-        btnCleanTable.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                btnCleanTableActionPerformed(evt);
-            }
-        });
-
-        GroupLayout panelTableLayout = new GroupLayout(panelTable);
-        panelTable.setLayout(panelTableLayout);
-        panelTableLayout.setHorizontalGroup(
-            panelTableLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(GroupLayout.Alignment.TRAILING, panelTableLayout.createSequentialGroup()
-                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(panelTableLayout.createParallelGroup(GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(titleList, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(scrollPaneTable, GroupLayout.DEFAULT_SIZE, 481, Short.MAX_VALUE))
-                .addGap(185, 185, 185))
-            .addGroup(panelTableLayout.createSequentialGroup()
-                .addGap(130, 130, 130)
-                .addComponent(btnCleanTable, GroupLayout.PREFERRED_SIZE, 95, GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(btnSelect, GroupLayout.PREFERRED_SIZE, 95, GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        panelTableLayout.setVerticalGroup(
-            panelTableLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(GroupLayout.Alignment.TRAILING, panelTableLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(titleList, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(scrollPaneTable, GroupLayout.DEFAULT_SIZE, 394, Short.MAX_VALUE)
-                .addGap(18, 18, 18)
-                .addGroup(panelTableLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnSelect, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnCleanTable, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18))
-        );
-
-        GroupLayout layout = new GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING, false)
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(panelNewClient, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(panelTable, GroupLayout.PREFERRED_SIZE, 496, GroupLayout.PREFERRED_SIZE))
-                    .addComponent(titleMain, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(7, Short.MAX_VALUE))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(titleMain)
-                .addGap(18, 18, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING, false)
-                    .addComponent(panelTable, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(panelNewClient, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(15, 15, 15))
-        );
-    }// </editor-fold>//GEN-END:initComponents
-
-    private void btnSearchActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
+    private void btnSearchActionPerformed(ActionEvent evt) {
         Set<Client> clients = new HashSet<>();
 
-        // Buscar por nombre
         if (btnName.isSelected()) {
             String name = txtName.getText().trim();
-            if (!name.isEmpty() && !name.equals("Ingrese el nombre *")) {
+            if (!name.isEmpty()) {
                 clients.addAll(clientService.findByName(name));
             }
         }
 
-        // Buscar por apellido
         if (btnLastName.isSelected()) {
             String lastName = txtLastName.getText().trim();
-            if (!lastName.isEmpty() && !lastName.equals("Ingrese el apellido *")) {
+            if (!lastName.isEmpty()) {
                 clients.addAll(clientService.findByLastName(lastName));
             }
         }
 
-        // Buscar por DNI
         if (btnDni.isSelected()) {
             String dniText = txtDni.getText().trim();
-            if (!dniText.isEmpty() && !dniText.equals("Ingrese el DNI *")) {
+            if (!dniText.isEmpty()) {
                 try {
                     int dni = Integer.parseInt(dniText);
                     clientService.findById(dni).ifPresent(clients::add);
-                } catch (NumberFormatException ignored) {
-                    // Mostrar mensaje
-                }
+                } catch (NumberFormatException ignored) {}
             }
         }
 
-        // Buscar por plan
+        if (btnPhone.isSelected()) {
+            String phone = txtPhone1.getText().trim();
+            if (!phone.isEmpty()) {
+                clients.addAll(clientService.findByPhoneNumber(phone));
+            }
+        }
+
         if (btnPlan.isSelected()) {
             if (comboBoxPlan.getSelectedIndex() != 0) {
                 String selectedPlan = comboBoxPlan.getSelectedItem().toString();
@@ -526,110 +426,81 @@ public class HistoricalPanel extends JPanel {
             }
         }
 
-        // Mostrar resultados
         titleList.setText("Lista de Historial: Buscados");
-
         loadHistoricalPlanToTable(new ArrayList<>(clients));
-    }//GEN-LAST:event_btnSearchActionPerformed
+    }
 
-    private void btnCleanPanelsActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnCleanPanelsActionPerformed
+    private void btnCleanPanelsActionPerformed(ActionEvent evt) {
         resetForm();
-    }//GEN-LAST:event_btnCleanPanelsActionPerformed
+    }
 
-    private void btnSelectActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnSelectActionPerformed
+    private void btnSelectActionPerformed(ActionEvent evt) {
         int filaSelected = tableListClients.getSelectedRow();
-
-        // Validar que haya selección
         if (filaSelected == -1) {
-            JOptionPane.showMessageDialog(this,
-                    "Selecciona a un cliente primero.",
-                    "Advertencia",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecciona a un cliente primero.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         try {
-            // Obtener el ID del cliente desde la columna 4
             String idStr = tableListClients.getValueAt(filaSelected, 4).toString();
             int clientId = Integer.parseInt(idStr);
 
-            // Buscar cliente
             Optional<Client> clientOpt = clientService.findById(clientId);
             if (clientOpt.isEmpty()) {
-                JOptionPane.showMessageDialog(this,
-                        "No se encontró el cliente con ID: " + clientId,
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "No se encontró el cliente con ID: " + clientId, "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             Client client = clientOpt.get();
-
-            // Crear lista modificable con el cliente
             List<Client> clients = new ArrayList<>();
             clients.add(client);
 
-            // Actualizar título y tabla
             titleList.setText("Historial de Cliente: " + client.getDocumentId());
             loadHistoricalPlanToTable(clients);
 
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this,
-                    "El valor de ID no es válido.",
-                    "Error de formato",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "El valor de ID no es válido.", "Error de formato", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
-                    "Ocurrió un error al obtener el cliente: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Ocurrió un error al obtener el cliente: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-    }//GEN-LAST:event_btnSelectActionPerformed
+    }
 
-    private void btnCleanTableActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnCleanTableActionPerformed
+    private void btnCleanTableActionPerformed(ActionEvent evt) {
         tableModelHistorical.setRowCount(0);
         titleList.setText("Lista de Historial");
-    }//GEN-LAST:event_btnCleanTableActionPerformed
+    }
 
+    // =========================================================================
+    // IMPLEMENTACIÓN DE Scrollable: Permite scroll vertical adaptativo
+    // =========================================================================
+    @Override
+    public Dimension getPreferredScrollableViewportSize() {
+        return getPreferredSize();
+    }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private JButton btnCleanPanels;
-    private JButton btnCleanTable;
-    private JRadioButton btnClientActive;
-    private JRadioButton btnClientInactive;
-    private JRadioButton btnDni;
-    private JRadioButton btnLastName;
-    private JRadioButton btnName;
-    private JRadioButton btnPhone;
-    private JRadioButton btnPlan;
-    private JRadioButton btnPlanActive;
-    private JRadioButton btnPlanInactive;
-    private JButton btnSearch;
-    private JButton btnSelect;
-    private JComboBox<String> comboBoxPlan;
-    private JRadioButton jRadioButton7;
-    private JRadioButton jRadioButton9;
-    private JLabel labelDni;
-    private JLabel labelLastName;
-    private JLabel labelMail;
-    private JLabel labelName;
-    private JLabel labelPhone;
-    private JLabel labelPhone1;
-    private JLabel labelPlan;
-    private JPanel panelNewClient;
-    private JPanel panelTable;
-    private JScrollPane scrollPaneTable;
-    private JTable tableListClients;
-    private JLabel titleCharge;
-    private JLabel titleClient;
-    private JLabel titleList;
-    private JLabel titleMain;
-    private JLabel titlePlan;
-    private JTextField txtDni;
-    private JTextField txtLastName;
-    private JTextField txtMail;
-    private JTextField txtName;
-    private JTextField txtPhone;
-    private JTextField txtPhone1;
-    // End of variables declaration//GEN-END:variables
+    @Override
+    public int getScrollableUnitIncrement(java.awt.Rectangle visibleRect, int orientation, int direction) {
+        return 20;
+    }
+
+    @Override
+    public int getScrollableBlockIncrement(java.awt.Rectangle visibleRect, int orientation, int direction) {
+        return 80;
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportWidth() {
+        return true; // Llenar el ancho del viewport
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportHeight() {
+        if (getWidth() < 850) {
+            return false;
+        }
+        if (getParent() instanceof JViewport) {
+            return getPreferredSize().height <= ((JViewport) getParent()).getHeight();
+        }
+        return true;
+    }
 }

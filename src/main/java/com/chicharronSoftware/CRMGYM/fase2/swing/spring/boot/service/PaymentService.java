@@ -10,6 +10,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.Payment
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -120,12 +122,9 @@ public class PaymentService {
      * Marca un pago como vencido si ya pasó la fecha límite.
      */
     public void markOverduePayments(LocalDate today) {
-        List<Payment> pending = paymentRepository.findByPaymentStatus(PaymentStatus.PENDIENTE);
-        for (Payment p : pending) {
-            if (p.getPeriod().isBefore(today)) {
-                p.setPaymentStatus(PaymentStatus.VENCIDO);
-                paymentRepository.save(p);
-            }
-        }
+        // [MEJORA JUNIOR] En lugar de obtener todos los pagos pendientes y recorrerlos
+        // en un bucle for() (lo que genera una consulta SELECT y múltiples UPDATE por cada pago),
+        // llamamos a la query masiva que actualiza todo directamente en la base de datos de una vez.
+        paymentRepository.markOverduePaymentsBulk(today);
     }
 }
