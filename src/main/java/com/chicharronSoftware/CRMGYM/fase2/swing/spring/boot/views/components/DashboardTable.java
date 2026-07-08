@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
@@ -18,7 +19,8 @@ import java.awt.*;
 public class DashboardTable extends JTable {
 
     private final TableCellRenderer defaultCellRenderer  = new DashboardCellRenderer();
-    private final TableCellRenderer statusBadgeRenderer  = new StatusBadgeWithActionsRenderer();
+    private final TableCellRenderer statusBadgeRenderer  = new StatusBadgeRenderer(true);
+    private final TableCellEditor statusBadgeEditor;
     private final TableCellRenderer clienteCellRenderer  = new ClienteCellRenderer();
 
     public DashboardTable(DefaultTableModel model) {
@@ -31,6 +33,13 @@ public class DashboardTable extends JTable {
         setForeground(Theme.TEXT_ACTIVE);
         setSelectionBackground(Theme.BORDER_SLATE);
         setSelectionForeground(Theme.TEXT_ACTIVE);
+
+        // Crear un menu basico para el editor
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem item1 = new JMenuItem("Cambiar Estado");
+        popupMenu.add(item1);
+        statusBadgeEditor = new StatusBadgeCellEditor(popupMenu);
+
         customizeHeader();
     }
 
@@ -71,10 +80,23 @@ public class DashboardTable extends JTable {
                     || "ACTIVO".equals(strVal) || "INACTIVO".equals(strVal)
                     || "TRUE".equals(strVal) || "FALSE".equals(strVal)) {
                 String colName = getColumnName(column).toUpperCase();
-                if (colName.contains("ESTADO")) return statusBadgeRenderer;
+                if (colName.contains("ESTADO")) {
+                    return statusBadgeRenderer;
+                }
             }
+        } else if (column == 0) {
+            return clienteCellRenderer;
         }
         return defaultCellRenderer;
+    }
+
+    @Override
+    public TableCellEditor getCellEditor(int row, int column) {
+        String colName = getColumnName(column).toUpperCase();
+        if (colName.contains("ESTADO")) {
+            return statusBadgeEditor;
+        }
+        return super.getCellEditor(row, column);
     }
 
     // =========================================================================
@@ -206,86 +228,4 @@ public class DashboardTable extends JTable {
         }
     }
 
-    // =========================================================================
-    // RENDERIZADOR FLYWEIGHT PARA STATUS BADGE + TRES PUNTOS (dibujados)
-    // El ⋮ Unicode no renderiza en todos los fonts de Windows → lo dibujamos
-    // =========================================================================
-    private static class StatusBadgeWithActionsRenderer extends JPanel implements TableCellRenderer {
-
-        private String badgeText = "";
-        private Color  badgeFg   = Color.WHITE;
-        private Color  badgeBg   = new Color(16, 185, 129, 30);
-        private Color  badgeBorder = Color.decode("#10b981");
-        private Color  cellBg    = Theme.CARD_BG;
-
-        // Dimensiones del badge
-        private static final int BADGE_W = 90;
-        private static final int BADGE_H = 22;
-
-        public StatusBadgeWithActionsRenderer() {
-            setOpaque(true);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-            badgeText = value != null ? value.toString() : "";
-            boolean isConfirmado = "CONFIRMADO".equalsIgnoreCase(badgeText);
-            badgeFg     = isConfirmado ? Color.decode("#10b981") : Color.decode("#f97316");
-            badgeBg     = isConfirmado ? new Color(16, 185, 129, 30) : new Color(249, 115, 22, 30);
-            badgeBorder = isConfirmado ? Color.decode("#10b981") : Color.decode("#f97316");
-            cellBg = isSelected ? table.getSelectionBackground()
-                    : (row % 2 == 0 ? Theme.CARD_BG : Theme.CARD_BG_ALT);
-            return this;
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
-
-            // Fondo de celda
-            g2.setColor(cellBg);
-            g2.fillRect(0, 0, getWidth(), getHeight());
-
-            // Centrar el badge horizontalmente dejando espacio para los 3 puntos a la derecha
-            int dotsAreaW = 22;
-            int badgeAreaW = getWidth() - dotsAreaW;
-
-            // Posición del badge pill
-            int bx = (badgeAreaW - BADGE_W) / 2;
-            int by = (getHeight() - BADGE_H) / 2;
-
-            // Pill de fondo
-            g2.setColor(badgeBg);
-            g2.fillRoundRect(bx, by, BADGE_W, BADGE_H, BADGE_H, BADGE_H);
-
-            // Borde del pill
-            g2.setColor(badgeBorder);
-            g2.setStroke(new BasicStroke(1.2f));
-            g2.drawRoundRect(bx, by, BADGE_W - 1, BADGE_H - 1, BADGE_H, BADGE_H);
-
-            // Texto del badge
-            g2.setFont(new Font("Segoe UI", Font.BOLD, 10));
-            g2.setColor(badgeFg);
-            FontMetrics fm = g2.getFontMetrics();
-            int textX = bx + (BADGE_W - fm.stringWidth(badgeText)) / 2;
-            int textY = by + (BADGE_H - fm.getHeight()) / 2 + fm.getAscent();
-            g2.drawString(badgeText, textX, textY);
-
-            // Tres puntos verticales dibujados con Graphics2D (sin Unicode)
-            int dotX = badgeAreaW + dotsAreaW / 2 - 2;
-            int dotRadius = 2;
-            int spacing = 5;
-            int startY = getHeight() / 2 - spacing;
-            g2.setColor(Theme.TEXT_INACTIVE);
-            for (int i = 0; i < 3; i++) {
-                int dotY = startY + i * spacing;
-                g2.fillOval(dotX, dotY, dotRadius * 2, dotRadius * 2);
-            }
-
-            g2.dispose();
-        }
-    }
 }

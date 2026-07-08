@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -81,16 +82,15 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         JPanel formPanel = new JPanel(new BorderLayout(10, 10));
         formPanel.setPreferredSize(new Dimension(340, 0));
 
-        JPanel cardPanel = new JPanel(new GridBagLayout());
+        JPanel cardPanel = CardFactory.createCardPanel(new GridBagLayout());
         cardPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1, true),
+                BorderFactory.createEmptyBorder(),
                 "Filtros de Búsqueda", TitledBorder.LEFT, TitledBorder.TOP,
                 new Font("Segoe UI", Font.BOLD, 14), UIManager.getColor("Label.foreground")
             ),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
         ));
-        cardPanel.putClientProperty("FlatLaf.style", "arc: 12; background: $Component.background;");
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;

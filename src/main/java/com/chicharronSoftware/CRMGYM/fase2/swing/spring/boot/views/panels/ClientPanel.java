@@ -10,6 +10,8 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.ClientV
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.VectorIcon;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.StatusBadgeRenderer;
 
 import net.miginfocom.swing.MigLayout;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,22 +127,7 @@ public class ClientPanel extends JPanel implements Scrollable {
         // =========================================================================
         // 1. TARJETA DEL FORMULARIO (COLUMNA IZQUIERDA)
         // =========================================================================
-        JPanel formCard = new JPanel(new MigLayout("wrap 1, ins 18 22 18 22, fillx", "[grow, fill]", "[]12[]")) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                // Dibujado manual en Graphics2D con antialiasing para un borde redondeado perfecto
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(Color.decode("#1e293b")); // Fondo Slate 800
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-                g2d.setColor(Color.decode("#334155")); // Borde Slate 700
-                g2d.setStroke(new BasicStroke(1.2f));
-                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
-                g2d.dispose();
-                super.paintComponent(g);
-            }
-        };
-        formCard.setOpaque(false);
+        JPanel formCard = CardFactory.createCardPanel(new MigLayout("wrap 1, ins 18 22 18 22, fillx", "[grow, fill]", "[]12[]"));
         
         titleCharge = new JLabel("Nuevo Cliente");
         titleCharge.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -404,7 +391,7 @@ public class ClientPanel extends JPanel implements Scrollable {
         }
 
         // Asignar el renderizador de píldoras de estado personalizado a la columna 5 (Estado)
-        tableListClients.getColumnModel().getColumn(5).setCellRenderer(new StatusCellRenderer());
+        tableListClients.getColumnModel().getColumn(5).setCellRenderer(new StatusBadgeRenderer(false));
 
         loadClientsToTable(clientService.getAllClientsDTO());
     }
@@ -675,94 +662,7 @@ public class ClientPanel extends JPanel implements Scrollable {
         resetForm();
     }
 
-    /**
-     * =========================================================================
-     * RENDERIZADOR DE ESTADO EN FORMA DE PÍLDORA (PILL BADGE) - LOOK AND FEEL
-     * =========================================================================
-     * EXPLICACIÓN DEL RENDERIZADO EN HILO DE PINTADO:
-     * - TableCellRenderer actúa como una "estampadora" de componentes para no sobrecargar la memoria.
-     * - En lugar de instanciar un nuevo JPanel por celda (lo cual saturaría el recolector de basura),
-     *   esta única clase extiende de DefaultTableCellRenderer (que hereda de JLabel) y se redibuja en el bucle
-     *   de pintado de la JTable sobreescribiendo paintComponent.
-     * - Se utiliza FontMetrics para medir el texto en píxeles y dibujar el óvalo de fondo con el tamaño exacto,
-     *   garantizando un consumo mínimo de CPU y gráficos optimizados.
-     */
-    private static class StatusCellRenderer extends DefaultTableCellRenderer {
-        private String status = "";
 
-        public StatusCellRenderer() {
-            setHorizontalAlignment(JLabel.CENTER);
-            setOpaque(false); // Deshabilitamos opacidad nativa para dibujar los bordes redondeados a mano
-        }
-
-        @Override
-        public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus, int row, int column) {
-            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            this.status = value != null ? value.toString() : "";
-            setText(status);
-            setFont(new Font("Segoe UI", Font.BOLD, 11));
-
-            // Configurar color de celda según selección
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            } else {
-                setBackground((row % 2 == 0) ? Color.decode("#1e293b") : Color.decode("#151f32"));
-                if ("ACTIVO".equalsIgnoreCase(status) || "true".equalsIgnoreCase(status)) {
-                    setForeground(Color.decode("#10b981")); // Verde
-                } else {
-                    setForeground(Color.decode("#ef4444")); // Rojo
-                }
-            }
-            return this;
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2d = (Graphics2D) g.create();
-            // Activamos suavizado de texto de alta definición
-            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // 1. Pintar fondo de renglón normal
-            g2d.setColor(getBackground());
-            g2d.fillRect(0, 0, getWidth(), getHeight());
-
-            // 2. Calcular límites del óvalo (Píldora) de forma dinámica
-            FontMetrics fm = g2d.getFontMetrics(getFont());
-            int textW = fm.stringWidth(status);
-            int pillW = textW + 20; // Padding horizontal dinámico
-            int pillH = 22;
-            int pillX = (getWidth() - pillW) / 2;
-            int pillY = (getHeight() - pillH) / 2;
-
-            Color badgeBg;
-            Color badgeBorder;
-
-            if ("ACTIVO".equalsIgnoreCase(status) || "true".equalsIgnoreCase(status)) {
-                badgeBg = new Color(16, 185, 129, 30); // Verde con 12% opacidad
-                badgeBorder = Color.decode("#10b981");
-            } else {
-                badgeBg = new Color(239, 68, 68, 30); // Rojo con 12% opacidad
-                badgeBorder = Color.decode("#ef4444");
-            }
-
-            // 3. Dibujar fondo de píldora redondeada
-            g2d.setColor(badgeBg);
-            g2d.fillRoundRect(pillX, pillY, pillW, pillH, pillH, pillH);
-
-            // 4. Dibujar contorno de la píldora
-            g2d.setColor(badgeBorder);
-            g2d.setStroke(new BasicStroke(1.2f));
-            g2d.drawRoundRect(pillX, pillY, pillW - 1, pillH - 1, pillH, pillH);
-
-            g2d.dispose();
-
-            // 5. Permitir que Swing pinte el texto del JLabel por encima de nuestro óvalo dibujado
-            super.paintComponent(g);
-        }
-    }
 
     // =========================================================================
     // IMPLEMENTACIÓN DE Scrollable: Permite scroll vertical adaptativo
