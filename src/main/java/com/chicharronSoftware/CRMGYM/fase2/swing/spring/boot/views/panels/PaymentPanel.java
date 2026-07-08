@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,7 @@ public class PaymentPanel extends JPanel implements Scrollable {
     private DefaultTableModel tableModelPays;
     private final PaymentService paymentService;
     private final ClientService clientService;
+    private final ButtonFactory buttonFactory;
 
     private boolean isEditMode = false;
     private Long editingPaymentId = null;
@@ -59,9 +61,10 @@ public class PaymentPanel extends JPanel implements Scrollable {
     private JButton btnOverdue;
 
     @Autowired
-    public PaymentPanel(PaymentService paymentService, ClientService clientService) {
+    public PaymentPanel(PaymentService paymentService, ClientService clientService, ButtonFactory buttonFactory) {
         this.paymentService = paymentService;
         this.clientService = clientService;
+        this.buttonFactory = buttonFactory;
 
         initComponentsHandCoded();
         initPayTable();
@@ -155,13 +158,10 @@ public class PaymentPanel extends JPanel implements Scrollable {
         JPanel actionPanel = new JPanel(new GridLayout(1, 2, 8, 8));
         actionPanel.setOpaque(false);
 
-        btnSave = new JButton("💾 Guardar");
-        btnSave.putClientProperty("JButton.buttonType", "accent");
-        btnSave.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSave = buttonFactory.createPrimaryButton("💾 Guardar");
         btnSave.addActionListener(e -> btnSaveActionPerformed(e));
 
-        btnSearch = new JButton("🔍 Buscar DNI");
-        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSearch = buttonFactory.createSecondaryButton("🔍 Buscar DNI");
         btnSearch.addActionListener(e -> btnSearchActionPerformed(e));
 
         actionPanel.add(btnSave);
@@ -171,8 +171,7 @@ public class PaymentPanel extends JPanel implements Scrollable {
         gbc.insets = new Insets(12, 0, 4, 0);
         cardPanel.add(actionPanel, gbc);
 
-        btnClean = new JButton("🧹 Limpiar Campos");
-        btnClean.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnClean = buttonFactory.createSecondaryButton("🧹 Limpiar Campos");
         btnClean.addActionListener(e -> btnCleanActionPerformed(e));
         gbc.gridy = row++;
         gbc.insets = new Insets(4, 0, 4, 0);
@@ -192,21 +191,16 @@ public class PaymentPanel extends JPanel implements Scrollable {
         // Filter actions top-right
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
 
-        btnAll = new JButton("Todos");
-        btnAll.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnAll = buttonFactory.createSecondaryButton("Todos");
         btnAll.addActionListener(e -> btnAllActionPerformed(e));
 
-        btnConfirmed = new JButton("Confirmados");
-        btnConfirmed.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnConfirmed = buttonFactory.createSecondaryButton("Confirmados");
         btnConfirmed.addActionListener(e -> btnConfirmedActionPerformed(e));
 
-        btnPending = new JButton("Pendientes");
-        btnPending.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnPending = buttonFactory.createSecondaryButton("Pendientes");
         btnPending.addActionListener(e -> btnPendingActionPerformed(e));
 
-        btnModify = new JButton("📝 Modificar");
-        btnModify.putClientProperty("JButton.buttonType", "accent");
-        btnModify.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnModify = buttonFactory.createPrimaryButton("📝 Modificar");
         btnModify.addActionListener(e -> btnModifyActionPerformed(e));
 
         filterPanel.add(btnAll);

@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -52,12 +53,14 @@ public class PlansPanel extends JPanel implements Scrollable {
     private JButton btnActive;
     private JButton btnInactive;
     private JButton btnModify;
+    private final ButtonFactory buttonFactory; // [MEJORA JUNIOR] Se inyecta ButtonFactory
 
     @Autowired
-    public PlansPanel(PlanService planService, PlanValidation planValidation, ClientService clientService) {
+    public PlansPanel(PlanService planService, PlanValidation planValidation, ClientService clientService, ButtonFactory buttonFactory) {
         this.planService = planService;
         this.planValidation = planValidation;
         this.clientService = clientService;
+        this.buttonFactory = buttonFactory;
 
         initComponentsHandCoded();
         initPlanTable();
@@ -138,21 +141,16 @@ public class PlansPanel extends JPanel implements Scrollable {
         JPanel actionPanel = new JPanel(new GridLayout(2, 2, 8, 8));
         actionPanel.setOpaque(false);
 
-        btnSave = new JButton("💾 Guardar");
-        btnSave.putClientProperty("JButton.buttonType", "accent");
-        btnSave.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSave = buttonFactory.createPrimaryButton("💾 Guardar");
         btnSave.addActionListener(e -> btnSaveActionPerformed(e));
 
-        btnSearch = new JButton("🔍 Buscar");
-        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSearch = buttonFactory.createSecondaryButton("🔍 Buscar");
         btnSearch.addActionListener(e -> btnSearchActionPerformed(e));
 
-        btnActivate = new JButton("✅ Activar");
-        btnActivate.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnActivate = buttonFactory.createSecondaryButton("✅ Activar");
         btnActivate.addActionListener(e -> btnActivateActionPerformed(e));
 
-        btnDeactivate = new JButton("❌ Desactivar");
-        btnDeactivate.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnDeactivate = buttonFactory.createSecondaryButton("❌ Desactivar");
         btnDeactivate.addActionListener(e -> btnDeactivateActionPerformed(e));
 
         actionPanel.add(btnSave);
@@ -164,8 +162,7 @@ public class PlansPanel extends JPanel implements Scrollable {
         gbc.insets = new Insets(15, 0, 5, 0);
         cardPanel.add(actionPanel, gbc);
 
-        btnClean = new JButton("🧹 Limpiar Campos");
-        btnClean.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnClean = buttonFactory.createSecondaryButton("🧹 Limpiar Campos");
         btnClean.addActionListener(e -> btnCleanActionPerformed(e));
         gbc.gridy = row++;
         gbc.insets = new Insets(4, 0, 4, 0);
@@ -185,21 +182,16 @@ public class PlansPanel extends JPanel implements Scrollable {
         // Filter actions top-right
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
 
-        btnAll = new JButton("Todos");
-        btnAll.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnAll = buttonFactory.createSecondaryButton("Todos");
         btnAll.addActionListener(e -> btnAllActionPerformed(e));
 
-        btnActive = new JButton("Activos");
-        btnActive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnActive = buttonFactory.createSecondaryButton("Activos");
         btnActive.addActionListener(e -> btnActiveActionPerformed(e));
 
-        btnInactive = new JButton("Inactivos");
-        btnInactive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnInactive = buttonFactory.createSecondaryButton("Inactivos");
         btnInactive.addActionListener(e -> btnInactiveActionPerformed(e));
 
-        btnModify = new JButton("📝 Modificar");
-        btnModify.putClientProperty("JButton.buttonType", "accent");
-        btnModify.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnModify = buttonFactory.createPrimaryButton("📝 Modificar");
         btnModify.addActionListener(e -> btnModifyActionPerformed(e));
 
         filterPanel.add(btnAll);

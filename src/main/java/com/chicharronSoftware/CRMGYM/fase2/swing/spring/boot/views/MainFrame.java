@@ -6,6 +6,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PaymentServ
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.ClientValidation;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.PlanValidation;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.dashboard.DashboardPanel;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.ClientPanel;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.HistoricalPanel;
@@ -58,6 +59,7 @@ public class MainFrame extends JFrame {
     private final PaymentService paymentService;
     private final PlanValidation planValidation;
     private final ClientValidation clientValidation;
+    private final ButtonFactory buttonFactory; // [MEJORA JUNIOR] Fábrica inyectada para pasar a paneles
 
     // Inyección del panel modular de Dashboard centralizado por Spring Boot
     private final DashboardPanel dashboardPanel;
@@ -68,7 +70,7 @@ public class MainFrame extends JFrame {
     @Autowired
     public MainFrame(DashboardPanel dashboardPanel, ClientService clientService, PlanService planService,
             HistoricalPlanService historicalPlanService, PaymentService paymentService,
-            PlanValidation planValidation, ClientValidation clientValidation) {
+            PlanValidation planValidation, ClientValidation clientValidation, ButtonFactory buttonFactory) {
         this.dashboardPanel = dashboardPanel;
         this.clientService = clientService;
         this.planService = planService;
@@ -76,6 +78,7 @@ public class MainFrame extends JFrame {
         this.paymentService = paymentService;
         this.planValidation = planValidation;
         this.clientValidation = clientValidation;
+        this.buttonFactory = buttonFactory;
 
         initComponents();
     }
@@ -111,12 +114,12 @@ public class MainFrame extends JFrame {
         // --- Mapeo de Eventos de Navegación del Sidebar ---
         sidebarPanel.addNavigationListener("Inicio", e -> showDashboardHome());
         sidebarPanel.addNavigationListener("Socios",
-                e -> showPanel(new ClientPanel(clientService, planService, clientValidation)));
+                e -> showPanel(new ClientPanel(clientService, planService, clientValidation, buttonFactory)));
         sidebarPanel.addNavigationListener("Planes",
-                e -> showPanel(new PlansPanel(planService, planValidation, clientService)));
-        sidebarPanel.addNavigationListener("Pagos", e -> showPanel(new PaymentPanel(paymentService, clientService)));
+                e -> showPanel(new PlansPanel(planService, planValidation, clientService, buttonFactory)));
+        sidebarPanel.addNavigationListener("Pagos", e -> showPanel(new PaymentPanel(paymentService, clientService, buttonFactory)));
         sidebarPanel.addNavigationListener("Historial",
-                e -> showPanel(new HistoricalPanel(clientService, planService, historicalPlanService)));
+                e -> showPanel(new HistoricalPanel(clientService, planService, historicalPlanService, buttonFactory)));
 
         // Mostrar la pantalla de Inicio por defecto al iniciar la aplicación
         showDashboardHome();
@@ -164,17 +167,17 @@ public class MainFrame extends JFrame {
     // Métodos auxiliares para la navegación interactiva desde otros paneles
     public void selectClientsPanel() {
         sidebarPanel.setActiveButtonByText("Socios");
-        showPanel(new ClientPanel(clientService, planService, clientValidation));
+        showPanel(new ClientPanel(clientService, planService, clientValidation, buttonFactory));
     }
 
     public void selectHistoryPanel() {
         sidebarPanel.setActiveButtonByText("Historial");
-        showPanel(new HistoricalPanel(clientService, planService, historicalPlanService));
+        showPanel(new HistoricalPanel(clientService, planService, historicalPlanService, buttonFactory));
     }
 
     public void selectPaymentsPanel() {
         sidebarPanel.setActiveButtonByText("Pagos");
-        showPanel(new PaymentPanel(paymentService, clientService));
+        showPanel(new PaymentPanel(paymentService, clientService, buttonFactory));
     }
 
     // [MEJORA JUNIOR] Se eliminó el método 'formatCurrency' ya que no se estaba utilizando en esta clase (código muerto).

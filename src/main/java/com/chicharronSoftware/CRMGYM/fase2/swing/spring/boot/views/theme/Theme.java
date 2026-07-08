@@ -125,6 +125,24 @@ public final class Theme {
     public static final int GAP_XL = 24;
     public static final int GAP_XXL = 32;
 
+    // [MEJORA JUNIOR] Nuevos tokens añadidos para la Fase 2
+    // Bordes y radios (Nuevos)
+    public static final int BORDER_RADIUS_SM = 10;
+    public static final int BORDER_RADIUS_MD = 16;
+    public static final int BORDER_RADIUS_LG = 20;
+
+    // Márgenes y paddings (Nuevos alias para estandarización)
+    public static final int SPACING_XS = 4;
+    public static final int SPACING_SM = 8;
+    public static final int SPACING_MD = 12;
+    public static final int SPACING_LG = 16;
+
+    // Botones específicos
+    public static final Color BTN_PRIMARY_BG = ACCENT_CYAN; // Manteniendo el turquesa usado como primary
+    public static final Color BTN_PRIMARY_FG = Color.WHITE;
+    public static final Color BTN_SECONDARY_BG = CARD_BG;
+    public static final Color BTN_SECONDARY_FG = TEXT_INACTIVE;
+
     /* 
      * =============================================================================
      * 4. ASISTENTE DE RENDERIZADO DE ALTA FIDELIDAD (HIGH-FIDELITY RENDERING HELPER)

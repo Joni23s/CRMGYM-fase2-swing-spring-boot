@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,7 @@ public class HistoricalPanel extends JPanel implements Scrollable {
     private final ClientService clientService;
     private final PlanService planService;
     private final HistoricalPlanService historicalPlanService;
+    private final ButtonFactory buttonFactory;
 
     // Componentes de interfaz
     private JTextField txtName;
@@ -58,10 +60,11 @@ public class HistoricalPanel extends JPanel implements Scrollable {
     private JButton btnCleanTable;
 
     @Autowired
-    public HistoricalPanel(ClientService clientService, PlanService planService, HistoricalPlanService historicalPlanService) {
+    public HistoricalPanel(ClientService clientService, PlanService planService, HistoricalPlanService historicalPlanService, ButtonFactory buttonFactory) {
         this.clientService = clientService;
         this.planService = planService;
         this.historicalPlanService = historicalPlanService;
+        this.buttonFactory = buttonFactory;
 
         initComponentsHandCoded();
         initHistoricalPlanTable();
@@ -180,14 +183,11 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         JPanel actionPanel = new JPanel(new GridLayout(1, 2, 8, 8));
         actionPanel.setOpaque(false);
 
-        btnSearch = new JButton("🔍 Buscar");
-        btnSearch.putClientProperty("JButton.buttonType", "accent");
-        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnSearch.addActionListener(e -> btnSearchActionPerformed(e));
-
-        btnCleanPanels = new JButton("🧹 Limpiar");
-        btnCleanPanels.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnCleanPanels.addActionListener(e -> btnCleanPanelsActionPerformed(e));
+        btnSearch = buttonFactory.createPrimaryButton("🔍 Buscar");
+        btnSearch.addActionListener(this::btnSearchActionPerformed);
+        
+        btnCleanPanels = buttonFactory.createSecondaryButton("🧹 Limpiar");
+        btnCleanPanels.addActionListener(this::btnCleanPanelsActionPerformed);
 
         actionPanel.add(btnCleanPanels);
         actionPanel.add(btnSearch);
@@ -209,14 +209,11 @@ public class HistoricalPanel extends JPanel implements Scrollable {
 
         JPanel tableActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         
-        btnCleanTable = new JButton("🧹 Limpiar Tabla");
-        btnCleanTable.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnCleanTable.addActionListener(e -> btnCleanTableActionPerformed(e));
+        btnCleanTable = buttonFactory.createSecondaryButton("🧹 Limpiar Tabla");
+        btnCleanTable.addActionListener(this::btnCleanTableActionPerformed);
         
-        btnSelect = new JButton("🔎 Seleccionar Cliente");
-        btnSelect.putClientProperty("JButton.buttonType", "accent");
-        btnSelect.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnSelect.addActionListener(e -> btnSelectActionPerformed(e));
+        btnSelect = buttonFactory.createPrimaryButton("🔎 Seleccionar Cliente");
+        btnSelect.addActionListener(this::btnSelectActionPerformed);
         
         tableActions.add(btnCleanTable);
         tableActions.add(btnSelect);

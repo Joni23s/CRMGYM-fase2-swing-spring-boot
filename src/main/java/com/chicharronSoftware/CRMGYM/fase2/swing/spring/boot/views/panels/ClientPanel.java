@@ -9,6 +9,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.ClientValidation;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.VectorIcon;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
 
 import net.miginfocom.swing.MigLayout;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,7 @@ public class ClientPanel extends JPanel implements Scrollable {
     private final ClientService clientService;
     private final PlanService planService;
     private final ClientValidation clientValidation;
+    private final ButtonFactory buttonFactory; // [MEJORA JUNIOR] Se inyecta ButtonFactory
     private boolean isEditMode = false;
     private int editingDni = -1;
 
@@ -91,10 +93,11 @@ public class ClientPanel extends JPanel implements Scrollable {
     private JButton btnDeactivate;
 
     @Autowired
-    public ClientPanel(ClientService clientService, PlanService planService, ClientValidation clientValidation) {
+    public ClientPanel(ClientService clientService, PlanService planService, ClientValidation clientValidation, ButtonFactory buttonFactory) {
         this.clientService = clientService;
         this.planService = planService;
         this.clientValidation = clientValidation;
+        this.buttonFactory = buttonFactory;
 
         initComponentsHandCoded();
         initClientTable();
@@ -184,21 +187,18 @@ public class ClientPanel extends JPanel implements Scrollable {
         JPanel actionGrid = new JPanel(new MigLayout("ins 0, gap 8, fillx", "[grow, fill][grow, fill]", "[]"));
         actionGrid.setOpaque(false);
         
-        btnSave = new JButton("Guardar", new VectorIcon("file-check", 14));
+        btnSave = buttonFactory.createPrimaryButton("Guardar", new VectorIcon("file-check", 14));
         btnSave.addActionListener(this::btnSaveActionPerformed);
-        styleAccentButton(btnSave);
         
-        btnSearch = new JButton("Buscar", new VectorIcon("clipboard", 14));
+        btnSearch = buttonFactory.createSecondaryButton("Buscar", new VectorIcon("clipboard", 14));
         btnSearch.addActionListener(this::btnSearchActionPerformed);
-        styleNormalButton(btnSearch);
         
         actionGrid.add(btnSave, "cell 0 0");
         actionGrid.add(btnSearch, "cell 1 0");
         formCard.add(actionGrid, "growx, gapbottom 8");
         
-        btnClean = new JButton("Limpiar Campos", new VectorIcon("history", 14));
+        btnClean = buttonFactory.createSecondaryButton("Limpiar Campos", new VectorIcon("history", 14));
         btnClean.addActionListener(this::btnCleanActionPerformed);
-        styleNormalButton(btnClean);
         formCard.add(btnClean, "growx");
 
         add(formCard, "cell 0 0, grow");
@@ -240,17 +240,14 @@ public class ClientPanel extends JPanel implements Scrollable {
         JPanel filterPanel = new JPanel(new MigLayout("ins 0, gapx 8", "[][][]"));
         filterPanel.setOpaque(false);
         
-        btnAll = new JButton("Todos");
+        btnAll = buttonFactory.createSecondaryButton("Todos");
         btnAll.addActionListener(this::btnAllActionPerformed);
-        styleNormalButton(btnAll);
         
-        btnActive = new JButton("Activos");
+        btnActive = buttonFactory.createSecondaryButton("Activos");
         btnActive.addActionListener(this::btnActiveActionPerformed);
-        styleNormalButton(btnActive);
         
-        btnInactive = new JButton("Inactivos");
+        btnInactive = buttonFactory.createSecondaryButton("Inactivos");
         btnInactive.addActionListener(this::btnInactiveActionPerformed);
-        styleNormalButton(btnInactive);
         
         filterPanel.add(btnAll);
         filterPanel.add(btnActive);
@@ -286,17 +283,14 @@ public class ClientPanel extends JPanel implements Scrollable {
         JPanel rowActionsBar = new JPanel(new MigLayout("ins 0, gapx 12, alignx right"));
         rowActionsBar.setOpaque(false);
         
-        btnModify = new JButton("Modificar Socio", new VectorIcon("clipboard", 14));
+        btnModify = buttonFactory.createPrimaryButton("Modificar Socio", new VectorIcon("clipboard", 14));
         btnModify.addActionListener(this::btnModifyActionPerformed);
-        styleAccentButton(btnModify);
         
-        btnActivate = new JButton("Activar", new VectorIcon("file-check", 14));
+        btnActivate = buttonFactory.createSecondaryButton("Activar", new VectorIcon("file-check", 14));
         btnActivate.addActionListener(this::btnActivateActionPerformed);
-        styleNormalButton(btnActivate);
         
-        btnDeactivate = new JButton("Desactivar", new VectorIcon("history", 14));
+        btnDeactivate = buttonFactory.createSecondaryButton("Desactivar", new VectorIcon("history", 14));
         btnDeactivate.addActionListener(this::btnDeactivateActionPerformed);
-        styleNormalButton(btnDeactivate);
         
         rowActionsBar.add(btnActivate);
         rowActionsBar.add(btnDeactivate);
@@ -345,41 +339,7 @@ public class ClientPanel extends JPanel implements Scrollable {
         return label;
     }
 
-    private void styleNormalButton(JButton button) {
-        button.setIconTextGap(8);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
-        button.putClientProperty("FlatLaf.style", 
-            "arc: 10; " +
-            "margin: 6 12 6 12; " +
-            "background: #1e293b; " +
-            "foreground: #94a3b8; " +
-            "borderColor: #334155; " +
-            "borderWidth: 1; " +
-            "hoverBackground: #223147; " +
-            "hoverForeground: #f8fafc;"
-        );
-    }
-
-    private void styleAccentButton(JButton button) {
-        button.setIconTextGap(8);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
-        button.putClientProperty("FlatLaf.style", 
-            "arc: 10; " +
-            "margin: 6 14 6 14; " +
-            "background: #06b6d4; " + // Turquesa vivo
-            "foreground: #ffffff; " +
-            "borderColor: #06b6d4; " +
-            "borderWidth: 1; " +
-            "hoverBackground: #0891b2; " +
-            "hoverForeground: #ffffff;"
-        );
-    }
+    // [MEJORA JUNIOR] Se eliminaron styleNormalButton y styleAccentButton porque ahora usamos ButtonFactory
 
     private void initClientTable() {
         tableModelClients = new DefaultTableModel() {
