@@ -15,6 +15,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.PlansP
 
 import net.miginfocom.swing.MigLayout;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.swing.*;
@@ -65,6 +66,7 @@ import java.awt.*;
  * =================================================================================
  */
 @Component
+@Profile("!test")
 public class MainFrame extends JFrame {
 
     private final ClientService clientService;
