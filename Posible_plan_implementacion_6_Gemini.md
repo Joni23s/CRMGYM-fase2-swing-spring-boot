@@ -1,8 +1,6 @@
 # Posible Plan de Implementación de la Fase 6 (Gemini)
 
-¡Hola! En este documento vas a encontrar un análisis detallado y explicaciones conceptuales paso a paso de la **Fase 6** (Flyway, CI/CD con GitHub Actions y Actuator), especialmente diseñado con explicaciones extra útiles para desarrolladores Junior. 
-
-El objetivo es evaluar si conviene o no aplicar esta fase a nuestra aplicación de escritorio (Swing) y entender a fondo cómo funciona cada tecnología en este contexto.
+¡Hola! En este documento vas a encontrar un análisis detallado y explicaciones conceptuales paso a paso de la **Fase 6** adaptada. Hemos reemplazado el uso de **Spring Boot Actuator** por **VisualVM**, una propuesta mucho más lógica y educativa para el desarrollo de aplicaciones de escritorio (Swing) que aporta un gran valor de aprendizaje para desarrolladores Junior.
 
 ---
 
@@ -44,53 +42,39 @@ Hasta ahora veníamos usando `spring.jpa.hibernate.ddl-auto=update`. Esta propie
 
 ---
 
-### 🩺 C. Spring Boot Actuator (Monitoreo de Salud)
+### 📊 C. VisualVM (Perfilado y Monitoreo Externo de la JVM)
 
 #### ¿Qué es?
-**Actuator** es un módulo de Spring Boot que provee herramientas para monitorear el estado interno de la aplicación. Te permite conocer cosas como:
-- Si la base de datos está activa y respondiendo (`/health`).
-- Cuánta memoria RAM está consumiendo la JVM (`/metrics`).
-- Qué beans están cargados en el contexto de Spring.
+**VisualVM** es una herramienta externa y visual que se conecta directamente a la Máquina Virtual de Java (JVM) en la que corre nuestra aplicación. A diferencia de Actuator, **no requiere añadir dependencias de código al proyecto ni levantar un servidor web local (Tomcat)**. 
 
-#### El desafío en una aplicación de Escritorio (Swing)
-Normalmente, Actuator expone esta información mediante peticiones HTTP (páginas web locales) en puertos como el `8080`. 
+Se conecta utilizando los puertos de diagnóstico nativos de Java (a través de JMX) y nos muestra en tiempo real gráficos intuitivos sobre lo que pasa "bajo el capó".
 
-Sin embargo, nuestra aplicación de escritorio está configurada en `Application.java` como no-web:
-```java
-.web(WebApplicationType.NONE)
-```
-Esto significa que Spring Boot arranca en modo "consola/headless", levantando la interfaz Swing pero **sin iniciar un servidor web** (como Tomcat embebido) para ahorrar recursos de tu computadora.
-- Si queremos ver las métricas por HTTP (con `/actuator`), tendríamos que agregar la dependencia `spring-boot-starter-web`, lo cual obligará a Spring Boot a abrir un puerto de red y consumir memoria RAM constante solo para servir esas páginas de monitoreo.
-- **Alternativa JMX:** Podemos usar Actuator sin HTTP mediante JMX (Java Management Extensions) usando herramientas locales como `jconsole` o `VisualVM`. Es más eficiente en recursos pero requiere configuraciones adicionales de software en tu máquina de desarrollo.
+#### Ventajas para un Junior
+- **Aprender gestión de memoria real:** Verás en tiempo real cómo funciona el *Garbage Collector* (recolector de basura), cómo se llena la memoria *Heap* (donde viven los objetos Java) y cómo se libera.
+- **Detección de fugas de memoria (Memory Leaks):** Puedes hacer capturas de memoria (*Heap Dumps*) y ver exactamente qué clases están ocupando espacio y no se están destruyendo.
+- **Análisis de Hilos (Threads):** Si la pantalla de la aplicación se congela, VisualVM te muestra qué hilo está bloqueado y en qué línea exacta de código ocurrió el bloqueo.
+- **Cero código invasivo:** Mantiene nuestra aplicación Swing 100% limpia y ligera para el cliente final.
 
 ---
 
 ## ⚖️ Conclusión: ¿Conviene o no aplicar la Fase 6?
 
-### 🟢 ¿Por qué SÍ convendría aplicarla?
-1. **Estabilidad y Orden de Base de Datos:** Dejar de depender de `ddl-auto=update` te prepara para una arquitectura profesional y previene problemas silenciosos de Hibernate con tipos de datos e índices.
-2. **Despliegues Futuros:** Si en la Fase 3 del proyecto vas a migrar la aplicación a una interfaz Web con una API REST, tener Flyway y CI/CD listo te ahorrará semanas de trabajo de configuración.
-3. **Automatización:** Si trabajas con más personas, la base de datos y la compilación se mantendrán 100% consistentes de manera automática.
+A continuación se evalúa cada uno de los tres pilares de esta fase adaptada:
 
-### 🔴 ¿Por qué NO convendría aplicarla (o hacerlo parcialmente)?
-1. **Actuator HTTP es innecesario:** No tiene sentido agregar peso al proyecto instalando un servidor web Tomcat en una aplicación que corre localmente en tu computadora para administrar el gimnasio. Consume RAM innecesaria para el cliente final.
-2. **Sobrecarga de archivos SQL:** Si vas a estar modificando la base de datos constantemente cada 5 minutos en fase de pruebas iniciales, crear archivos de migración de Flyway continuamente (`V3`, `V4`, `V5`) puede volverse tedioso si no estás acostumbrado al flujo.
-
-### 💡 Recomendación del Arquitecto (Enfoque Híbrido)
-Se sugiere aplicar la Fase 6 de forma **parcial e inteligente**:
-- **SÍ a Flyway:** Para tener la base de datos ordenada, portable y automatizada.
-- **SÍ a GitHub Actions:** Para tener la red de seguridad de compilación y pruebas en la nube.
-- **NO a Actuator HTTP:** Remover Actuator del `pom.xml` para optimizar el rendimiento de la aplicación y mantener el consumo de memoria de la app al mínimo en la PC del administrador.
+| Componente | ¿Qué aporta? | Costo/Impacto Técnico | ¿Vale la pena? | Recomendación |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Flyway Migrations** | - Elimina la inicialización manual vía `script_initialized_db.sql`. <br>- Automatiza la creación/actualización del esquema de BD en entornos locales de desarrollo. <br>- Garantiza control de versiones del esquema SQL. | - Requiere reestructurar el archivo SQL en carpetas específicas (`db/migration/V1__...sql`). <br>- Configurar y probar que el ciclo de vida de Flyway valide las entidades de Hibernate. | **Sí, altamente recomendado.** | Permite automatizar la creación y actualización de tablas tanto en desarrollo como en la PC del administrador sin scripts manuales. |
+| **2. CI/CD con GitHub Actions** | - Ejecuta compilación y tests automáticos en la nube con cada Push/PR. <br>- Evita integrar código que no compile o con tests rotos. | - Crear un archivo `.github/workflows/maven.yml`. <br>- El impacto local es nulo; solo configuración de infraestructura. | **Sí, recomendado.** | Aporta una red de seguridad crucial con un esfuerzo de configuración mínimo (solo un archivo YAML). |
+| **3. VisualVM (Monitoreo)** | - Monitoreo completo y visual de CPU, RAM, recolección de basura e hilos. <br>- Herramienta estándar de la industria para resolver problemas de rendimiento e hilos en Swing. | - Cero costo en el código. <br>- El desarrollador solo debe descargar e instalar VisualVM en su máquina local para conectarse al proceso Java de la app. | **Sí, excelente para aprender.** | Reemplaza con éxito a Actuator sin recargar la aplicación de escritorio con Tomcat/puertos web locales. Es 100% educativo. |
 
 ---
 
-## 📋 Guía Técnica de Implementación Paso a Paso (Flyway + CI)
+## 📋 Guía Técnica de Implementación Paso a Paso
 
-Si decides avanzar con la recomendación híbrida, aquí tienes la guía para hacerlo:
+### 1. Migraciones de Base de Datos (Flyway)
 
-### Paso 1: Configurar dependencias en `pom.xml`
-1. Remueve la dependencia de `spring-boot-starter-actuator` (si se decide no usar monitoreo).
-2. Agrega las dependencias de Flyway dentro de `<dependencies>`:
+#### Paso 1.1: Configurar dependencias en `pom.xml`
+Añade las dependencias de Flyway dentro de la sección `<dependencies>`:
 ```xml
 <!-- Migraciones de base de datos con Flyway -->
 <dependency>
@@ -103,8 +87,8 @@ Si decides avanzar con la recomendación híbrida, aquí tienes la guía para ha
 </dependency>
 ```
 
-### Paso 2: Configurar `application.properties`
-Cambiamos la validación automática para que Hibernate no intente alterar la base de datos:
+#### Paso 1.2: Configurar `application.properties`
+Cambiamos `ddl-auto` a `validate` para que Hibernate solo verifique la estructura y no intente alterarla:
 ```properties
 # Validar que el esquema coincida con las entidades
 spring.jpa.hibernate.ddl-auto=validate
@@ -113,14 +97,18 @@ spring.jpa.hibernate.ddl-auto=validate
 spring.flyway.baseline-on-migrate=true
 ```
 
-### Paso 3: Organizar los archivos SQL de Migración
-Crea las carpetas `src/main/resources/db/migration/` y añade los siguientes archivos:
+#### Paso 1.3: Organizar los archivos SQL de Migración
+Crea la estructura de carpetas `src/main/resources/db/migration/` y añade los siguientes archivos:
 
-1. **`V1__Initial_Schema.sql`**: Contendrá las sentencias `CREATE TABLE` del archivo `script_initialized_db.sql` original (sin la sentencia `CREATE DATABASE` inicial para permitir flexibilidad).
-2. **`V2__Default_Data.sql`**: Contendrá los `INSERT INTO` para cargar los planes por defecto (`Sin Plan`, `El día`, `Básico`, `Premium`) y los clientes iniciales.
+*   **`V1__Initial_Schema.sql`**: Contendrá las sentencias `CREATE TABLE` del archivo `script_initialized_db.sql` original (sin la sentencia `CREATE DATABASE` inicial para permitir flexibilidad).
+*   **`V2__Default_Data.sql`**: Contendrá los `INSERT INTO` para cargar los planes por defecto (`Sin Plan`, `El día`, `Básico`, `Premium`) y los clientes de prueba iniciales.
 
-### Paso 4: Crear Workflow de GitHub Actions
-Crea el archivo `.github/workflows/maven.yml` con el siguiente contenido base:
+---
+
+### 2. Integración Continua (GitHub Actions)
+
+#### Paso 2.1: Crear archivo de Workflow
+Crea la carpeta `.github/workflows/` en la raíz del proyecto y añade el archivo `maven.yml` con el siguiente contenido:
 ```yaml
 name: Java CI con Maven
 
@@ -148,4 +136,23 @@ jobs:
     - name: Compilar y Probar con Maven
       run: mvn -B clean package
 ```
-*(Nota: Este pipeline compilará el código y ejecutará los tests automáticos en cada push).*
+
+---
+
+### 3. Monitoreo e Inspección con VisualVM
+
+#### Paso 3.1: Instalar VisualVM
+1. Descarga la última versión de **VisualVM** desde su sitio web oficial ([visualvm.github.io](https://visualvm.github.io/)).
+2. Descomprime el archivo `.zip` en una ubicación cómoda de tu disco (ej: `C:\tools\visualvm`).
+
+#### Paso 3.2: Ejecutar tu Aplicación y Conectar VisualVM
+1. Inicia la aplicación desde tu entorno de desarrollo o ejecutando `./mvnw spring-boot:run`.
+2. Abre la carpeta de VisualVM, entra a `bin` y ejecuta `visualvm.exe`.
+3. En la barra lateral izquierda, bajo la categoría **Local**, verás listados todos los procesos Java activos en tu máquina.
+4. Busca el proceso que corresponda a nuestro proyecto (normalmente se llamará `com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.Application` o tendrá el ID de proceso asociado a Maven).
+5. Haz doble clic sobre él.
+
+#### Paso 3.3: ¿Qué inspeccionar en la interfaz de VisualVM?
+*   **Pestaña "Monitor":** Aquí verás gráficos en tiempo real del uso de CPU y del uso de memoria *Heap*. Puedes hacer clic en **"Perform GC"** para forzar manualmente al recolector de basura a limpiar memoria sin usar.
+*   **Pestaña "Threads" (Hilos):** Te mostrará todos los hilos en ejecución. Swing maneja el *AWT-EventQueue-0* (el EDT). Podrás ver si ese hilo está en estado "Running" (verde) o si se queda bloqueado (rojo/amarillo) al realizar consultas pesadas, demostrando visualmente el impacto de usar o no usar `SwingWorker`.
+*   **Pestaña "Sampler" / "Profiler":** Te permite iniciar un análisis rápido de CPU para descubrir qué consultas SQL o métodos lógicos tardan más milisegundos en responder.
