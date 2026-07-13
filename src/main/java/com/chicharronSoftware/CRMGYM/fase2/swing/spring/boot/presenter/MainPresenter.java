@@ -33,8 +33,8 @@ public class MainPresenter {
 
     @Autowired
     public MainPresenter(MainFrame mainFrame, SidebarPanel sidebarPanel, StatusBarPanel statusBarPanel,
-                         DashboardPanel dashboardPanel, PlansPanel plansPanel, ClientPanel clientPanel,
-                         PaymentPanel paymentPanel, HistoricalPanel historicalPanel, ClientService clientService) {
+            DashboardPanel dashboardPanel, PlansPanel plansPanel, ClientPanel clientPanel,
+            PaymentPanel paymentPanel, HistoricalPanel historicalPanel, ClientService clientService) {
         this.mainFrame = mainFrame;
         this.sidebarPanel = sidebarPanel;
         this.statusBarPanel = statusBarPanel;
@@ -88,22 +88,21 @@ public class MainPresenter {
 
     private void checkDatabaseConnectionAsync() {
         AsyncDataLoader.loadData(
-            () -> {
-                // Call a lightweight DB check
-                clientService.findByIsActiveDTO(true);
-                return true;
-            },
-            new AsyncDataLoader.DataLoadCallback<Boolean>() {
-                @Override
-                public void onSuccess(Boolean result) {
-                    statusBarPanel.setConnectionStatus(true, "crmgym_fase2");
-                }
+                () -> {
+                    // Call a lightweight DB check
+                    clientService.findByIsActiveDTO(true);
+                    return true;
+                },
+                new AsyncDataLoader.DataLoadCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean result) {
+                        statusBarPanel.setConnectionStatus(true, "crmgym_fase2");
+                    }
 
-                @Override
-                public void onError(Exception ex) {
-                    statusBarPanel.setConnectionStatus(false, "");
-                }
-            }
-        );
+                    @Override
+                    public void onError(Exception ex) {
+                        statusBarPanel.setConnectionStatus(false, "");
+                    }
+                });
     }
 }
