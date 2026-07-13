@@ -43,10 +43,6 @@ public class PlanService {
         return planRepository.findByValue(cost);
     }
 
-    public List<Plan> findByIsActive(boolean isActive) {
-        return planRepository.findByIsActive(isActive);
-    }
-
     public void changeStatusWithClients(Integer id, boolean status) {
         planRepository.findById(id).ifPresent(plan -> {
             if (!status) {
