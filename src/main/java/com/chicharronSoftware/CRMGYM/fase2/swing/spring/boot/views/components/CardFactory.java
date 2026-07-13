@@ -11,6 +11,22 @@ import java.awt.*;
  */
 public class CardFactory {
 
+    public static void paintCardBackground(Graphics g, int width, int height) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        Theme.enableHighFidelity(g2);
+        
+        // Pintar fondo
+        g2.setColor(Theme.CARD_BG);
+        g2.fillRoundRect(0, 0, width, height, Theme.ARC_CARD, Theme.ARC_CARD);
+        
+        // Pintar borde
+        g2.setColor(Theme.BORDER_SLATE);
+        g2.setStroke(new BasicStroke(1.2f));
+        g2.drawRoundRect(0, 0, width - 1, height - 1, Theme.ARC_CARD, Theme.ARC_CARD);
+        
+        g2.dispose();
+    }
+
     /**
      * Crea un panel redondeado con el diseño estandar de "Card" (fondo y bordes).
      * 
@@ -23,19 +39,8 @@ public class CardFactory {
         JPanel cardPanel = new JPanel(layoutManager) {
             @Override
             protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                Theme.enableHighFidelity(g2);
-                
-                // Pintar fondo
-                g2.setColor(Theme.CARD_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), Theme.ARC_CARD, Theme.ARC_CARD);
-                
-                // Pintar borde
-                g2.setColor(Theme.BORDER_SLATE);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, Theme.ARC_CARD, Theme.ARC_CARD);
-                
-                g2.dispose();
                 super.paintComponent(g);
+                paintCardBackground(g, getWidth(), getHeight());
             }
         };
         cardPanel.setOpaque(false);

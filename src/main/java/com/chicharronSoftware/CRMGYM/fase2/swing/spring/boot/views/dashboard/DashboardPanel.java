@@ -9,6 +9,8 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.Me
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.utils.FormatterUtils;
 
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 import net.miginfocom.swing.MigLayout;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +40,10 @@ public class DashboardPanel extends JPanel implements Scrollable {
     private MetricCard cardPlans;
     private MetricCard cardRevenue;
 
-    public DashboardPanel() {
+    private final ButtonFactory buttonFactory;
+
+    public DashboardPanel(ButtonFactory buttonFactory) {
+        this.buttonFactory = buttonFactory;
         initComponentsHandCoded();
     }
 
@@ -216,21 +221,7 @@ public class DashboardPanel extends JPanel implements Scrollable {
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Theme.CARD_BG);
 
-        final JPanel tableCard = new JPanel(new MigLayout("fill, ins 16")) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(Theme.CARD_BG);
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), Theme.ARC_CARD, Theme.ARC_CARD);
-                g2d.setColor(Theme.BORDER_SLATE);
-                g2d.setStroke(new BasicStroke(1.2f));
-                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, Theme.ARC_CARD, Theme.ARC_CARD);
-                g2d.dispose();
-                super.paintComponent(g);
-            }
-        };
-        tableCard.setOpaque(false);
+        final JPanel tableCard = CardFactory.createCardPanel(new MigLayout("fill, ins 16"));
 
         JLabel lblTableTitle = new JLabel("Registro Reciente de Pagos");
         lblTableTitle.setFont(Theme.FONT_SECTION_TITLE);
@@ -257,21 +248,7 @@ public class DashboardPanel extends JPanel implements Scrollable {
         // =====================================================================
         final MigLayout bottomActionsCardLayout = new MigLayout(
                 "ins 12 24 12 24, fill, aligny center", "[grow][grow][grow]", "[]");
-        final JPanel bottomActionsCard = new JPanel(bottomActionsCardLayout) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(Theme.CARD_BG);
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), Theme.ARC_CARD, Theme.ARC_CARD);
-                g2d.setColor(Theme.BORDER_SLATE);
-                g2d.setStroke(new BasicStroke(1.2f));
-                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, Theme.ARC_CARD, Theme.ARC_CARD);
-                g2d.dispose();
-                super.paintComponent(g);
-            }
-        };
-        bottomActionsCard.setOpaque(false);
+        final JPanel bottomActionsCard = CardFactory.createCardPanel(bottomActionsCardLayout);
 
         JButton btnRegisterSocio = new JButton("Registrar Nuevo Socio",
                 new VectorIcon("user-plus", 16, Color.decode("#3b82f6")));
@@ -280,9 +257,9 @@ public class DashboardPanel extends JPanel implements Scrollable {
         JButton btnViewHistory   = new JButton("Ver Historial Completo",
                 new VectorIcon("history", 16, Color.decode("#8b5cf6")));
 
-        styleActionButton(btnRegisterSocio);
-        styleActionButton(btnCobrar);
-        styleActionButton(btnViewHistory);
+        buttonFactory.styleToolActionButton(btnRegisterSocio);
+        buttonFactory.styleToolActionButton(btnCobrar);
+        buttonFactory.styleToolActionButton(btnViewHistory);
 
         btnRegisterSocio.addActionListener(e -> {
             MainFrame mainFrame = (MainFrame) SwingUtilities.getWindowAncestor(this);
@@ -492,20 +469,5 @@ public class DashboardPanel extends JPanel implements Scrollable {
             return getPreferredSize().height <= ((JViewport) getParent()).getHeight();
         }
         return false;
-    }
-
-    private void styleActionButton(JButton button) {
-        button.setIconTextGap(10);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
-        button.putClientProperty("JButton.buttonType", "toolBarButton");
-        button.putClientProperty("FlatLaf.style",
-                "arc: 12; " +
-                "margin: 8 16 8 16; " +
-                "foreground: #f8fafc; " +
-                "hoverBackground: #1e293b; " +
-                "hoverForeground: #3b82f6;");
     }
 }

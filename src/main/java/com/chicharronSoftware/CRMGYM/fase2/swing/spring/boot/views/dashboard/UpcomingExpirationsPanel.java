@@ -3,6 +3,7 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.dashboard;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Payment;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
@@ -89,14 +90,7 @@ public class UpcomingExpirationsPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(Theme.CARD_BG);
-        g2d.fillRoundRect(0, 0, getWidth(), getHeight(), Theme.ARC_CARD, Theme.ARC_CARD);
-        g2d.setColor(Theme.BORDER_SLATE);
-        g2d.setStroke(new BasicStroke(1.2f));
-        g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, Theme.ARC_CARD, Theme.ARC_CARD);
-        g2d.dispose();
+        CardFactory.paintCardBackground(g, getWidth(), getHeight());
     }
 
     private static class ExpirationItem extends JPanel {

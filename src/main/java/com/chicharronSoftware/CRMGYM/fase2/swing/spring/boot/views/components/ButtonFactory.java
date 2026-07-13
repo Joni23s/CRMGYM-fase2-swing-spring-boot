@@ -53,4 +53,19 @@ public class ButtonFactory {
             hoverBg.getRGB() & 0xFFFFFF
         ));
     }
+
+    public void styleToolActionButton(JButton button) {
+        button.setIconTextGap(10);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setContentAreaFilled(false);
+        button.setFocusPainted(false);
+        button.putClientProperty("JButton.buttonType", "toolBarButton");
+        button.putClientProperty("FlatLaf.style",
+                "arc: 12; " +
+                "margin: 8 16 8 16; " +
+                "foreground: #f8fafc; " +
+                "hoverBackground: #1e293b; " +
+                "hoverForeground: #3b82f6;");
+    }
 }
