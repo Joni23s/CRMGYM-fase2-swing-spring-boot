@@ -2,25 +2,15 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.HistoricalPlanDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PlanDTO;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.HistoricalPlanService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ItemEvent;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,9 +18,6 @@ import org.springframework.stereotype.Component;
 public class HistoricalPanel extends JPanel implements Scrollable {
 
     private DefaultTableModel tableModelHistorical;
-    private final ClientService clientService;
-    private final PlanService planService;
-    private final HistoricalPlanService historicalPlanService;
     private final ButtonFactory buttonFactory;
 
     // Componentes de interfaz
@@ -61,17 +48,9 @@ public class HistoricalPanel extends JPanel implements Scrollable {
     private JButton btnCleanTable;
 
     @Autowired
-    public HistoricalPanel(ClientService clientService, PlanService planService, HistoricalPlanService historicalPlanService, ButtonFactory buttonFactory) {
-        this.clientService = clientService;
-        this.planService = planService;
-        this.historicalPlanService = historicalPlanService;
+    public HistoricalPanel(ButtonFactory buttonFactory) {
         this.buttonFactory = buttonFactory;
-
         initComponentsHandCoded();
-        initHistoricalPlanTable();
-        initRadioButtonsClients();
-        initRadioButtonsPlans();
-        resetForm();
     }
 
     private void initComponentsHandCoded() {
@@ -119,6 +98,11 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         btnClientActive.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnClientInactive = new JRadioButton("Inactivo");
         btnClientInactive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        ButtonGroup groupClientStatus = new ButtonGroup();
+        groupClientStatus.add(btnClientActive);
+        groupClientStatus.add(btnClientInactive);
+        
         clientStatusPanel.add(btnClientActive);
         clientStatusPanel.add(btnClientInactive);
         gbc.gridy = row++;
@@ -167,6 +151,11 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         btnPlanActive.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnPlanInactive = new JRadioButton("Plan Inactivo");
         btnPlanInactive.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        ButtonGroup groupPlanStatus = new ButtonGroup();
+        groupPlanStatus.add(btnPlanActive);
+        groupPlanStatus.add(btnPlanInactive);
+        
         planStatusPanel.add(btnPlanActive);
         planStatusPanel.add(btnPlanInactive);
         gbc.gridy = row++;
@@ -184,10 +173,7 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         actionPanel.setOpaque(false);
 
         btnSearch = buttonFactory.createPrimaryButton("🔍 Buscar");
-        btnSearch.addActionListener(this::btnSearchActionPerformed);
-        
         btnCleanPanels = buttonFactory.createSecondaryButton("🧹 Limpiar");
-        btnCleanPanels.addActionListener(this::btnCleanPanelsActionPerformed);
 
         actionPanel.add(btnCleanPanels);
         actionPanel.add(btnSearch);
@@ -210,10 +196,7 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         JPanel tableActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         
         btnCleanTable = buttonFactory.createSecondaryButton("🧹 Limpiar Tabla");
-        btnCleanTable.addActionListener(this::btnCleanTableActionPerformed);
-        
         btnSelect = buttonFactory.createPrimaryButton("🔎 Seleccionar Cliente");
-        btnSelect.addActionListener(this::btnSelectActionPerformed);
         
         tableActions.add(btnCleanTable);
         tableActions.add(btnSelect);
@@ -272,7 +255,7 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         return panel;
     }
 
-    private void initHistoricalPlanTable() {
+    public void initHistoricalPlanTable() {
         tableModelHistorical = new DefaultTableModel() {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -283,66 +266,16 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         tableModelHistorical.setColumnIdentifiers(new Object[]{
                 "Id", "Inicio", "Fin", "Estado", "DNI", "Cliente", "Plan"
         });
-        loadAllHistoricalPlanToTableAsync();
     }
 
-    private void showTableLoadingState() {
+    public void showLoadingTable() {
         tableModelHistorical.setRowCount(0);
         tableModelHistorical.addRow(new Object[] {
                 "", "", "Cargando datos...", "", "", "", ""
         });
     }
 
-    private void loadAllHistoricalPlanToTableAsync() {
-        showTableLoadingState();
-        // Deshabilitar botones temporamente para feedback
-        btnSearch.setEnabled(false);
-
-        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
-            () -> historicalPlanService.findAllWithDetails(),
-            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<HistoricalPlanDTO>>() {
-                @Override
-                public void onSuccess(List<HistoricalPlanDTO> result) {
-                    populateHistoricalTable(result);
-                    btnSearch.setEnabled(true);
-                }
-
-                @Override
-                public void onError(Exception ex) {
-                    btnSearch.setEnabled(true);
-                    JOptionPane.showMessageDialog(HistoricalPanel.this, "Error cargando historial: " + ex.getMessage());
-                }
-            }
-        );
-    }
-
-    private void loadHistoricalPlanToTableAsync(List<Client> clients) {
-        if (clients == null || clients.isEmpty()) {
-            tableModelHistorical.setRowCount(0);
-            return;
-        }
-        showTableLoadingState();
-        btnSearch.setEnabled(false);
-
-        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
-            () -> historicalPlanService.findByClientsWithDetails(clients),
-            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<HistoricalPlanDTO>>() {
-                @Override
-                public void onSuccess(List<HistoricalPlanDTO> result) {
-                    populateHistoricalTable(result);
-                    btnSearch.setEnabled(true);
-                }
-
-                @Override
-                public void onError(Exception ex) {
-                    btnSearch.setEnabled(true);
-                    JOptionPane.showMessageDialog(HistoricalPanel.this, "Error cargando filtrado: " + ex.getMessage());
-                }
-            }
-        );
-    }
-
-    private void populateHistoricalTable(List<HistoricalPlanDTO> historicalPlanDTOS) {
+    public void updateTable(List<HistoricalPlanDTO> historicalPlanDTOS) {
         tableModelHistorical.setRowCount(0);
         for (HistoricalPlanDTO dto : historicalPlanDTOS) {
             tableModelHistorical.addRow(new Object[] {
@@ -357,75 +290,25 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         }
     }
 
-    private void initRadioButtonsPlans() {
-        ButtonGroup groupPlanStatus = new ButtonGroup();
-        groupPlanStatus.add(btnPlanActive);
-        groupPlanStatus.add(btnPlanInactive);
-        btnPlanActive.setSelected(true);
-        loadPlansToComboBox(true);
-
-        btnPlanActive.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                loadPlansToComboBox(true);
-            }
-        });
-
-        btnPlanInactive.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                loadPlansToComboBox(false);
-            }
-        });
+    public void clearTable() {
+        tableModelHistorical.setRowCount(0);
     }
 
-    private void initRadioButtonsClients() {
-        ButtonGroup groupClientStatus = new ButtonGroup();
-        groupClientStatus.add(btnClientActive);
-        groupClientStatus.add(btnClientInactive);
-
-        btnClientActive.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                // Para simplificar, podríamos cargar todo y filtrar en memoria, o usar AsyncDataLoader:
-                com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
-                    () -> clientService.findByIsActive(true),
-                    new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<Client>>() {
-                        @Override public void onSuccess(List<Client> clients) { loadHistoricalPlanToTableAsync(clients); }
-                        @Override public void onError(Exception ex) {}
-                    }
-                );
-            }
-        });
-
-        btnClientInactive.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
-                    () -> clientService.findByIsActive(false),
-                    new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<Client>>() {
-                        @Override public void onSuccess(List<Client> clients) { loadHistoricalPlanToTableAsync(clients); }
-                        @Override public void onError(Exception ex) {}
-                    }
-                );
-            }
-        });
-    }
-
-    private void loadPlansToComboBox(boolean active) {
+    public void populatePlansComboBox(List<PlanDTO> planes) {
         comboBoxPlan.removeAllItems();
         comboBoxPlan.addItem("Seleccione un Plan *");
-
-        List<PlanDTO> planes = planService.findByIsActiveDTO(active);
-        if (planes != null) {
-            for (PlanDTO plan : planes) {
-                comboBoxPlan.addItem(plan.toString());
-            }
+        for (PlanDTO plan : planes) {
+            comboBoxPlan.addItem(plan.toString());
         }
     }
 
-    private void resetForm() {
+    public void resetForm() {
         txtName.setText("");
         txtLastName.setText("");
         txtDni.setText("");
         txtPhone1.setText("");
         
+        // Evitamos disparar eventos infinitos temporalmente o los ignoramos del lado del presenter.
         btnClientActive.setSelected(false);
         btnClientInactive.setSelected(false);
         btnPlanActive.setSelected(true);
@@ -450,93 +333,50 @@ public class HistoricalPanel extends JPanel implements Scrollable {
         comboBoxPlan.setBorder(UIManager.getBorder("ComboBox.border"));
     }
 
-    private void btnSearchActionPerformed(ActionEvent evt) {
-        Set<Client> clients = new HashSet<>();
-
-        if (btnName.isSelected()) {
-            String name = txtName.getText().trim();
-            if (!name.isEmpty()) {
-                clients.addAll(clientService.findByName(name));
-            }
-        }
-
-        if (btnLastName.isSelected()) {
-            String lastName = txtLastName.getText().trim();
-            if (!lastName.isEmpty()) {
-                clients.addAll(clientService.findByLastName(lastName));
-            }
-        }
-
-        if (btnDni.isSelected()) {
-            String dniText = txtDni.getText().trim();
-            if (!dniText.isEmpty()) {
-                try {
-                    int dni = Integer.parseInt(dniText);
-                    clientService.findById(dni).ifPresent(clients::add);
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-
-        if (btnPhone.isSelected()) {
-            String phone = txtPhone1.getText().trim();
-            if (!phone.isEmpty()) {
-                clients.addAll(clientService.findByPhoneNumber(phone));
-            }
-        }
-
-        if (btnPlan.isSelected()) {
-            if (comboBoxPlan.getSelectedIndex() != 0) {
-                String selectedPlan = comboBoxPlan.getSelectedItem().toString();
-                clients.addAll(clientService.findByCurrentPlan(selectedPlan));
-            }
-        }
-
-        titleList.setText("Lista de Historial: Buscados");
-        loadHistoricalPlanToTableAsync(new ArrayList<>(clients));
+    public void enableSearchButton(boolean enabled) {
+        btnSearch.setEnabled(enabled);
     }
 
-    private void btnCleanPanelsActionPerformed(ActionEvent evt) {
-        resetForm();
+    public void showError(String message, String title) {
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
     }
 
-    private void btnSelectActionPerformed(ActionEvent evt) {
-        int filaSelected = tableListClients.getSelectedRow();
-        if (filaSelected == -1) {
-            JOptionPane.showMessageDialog(this, "Selecciona a un cliente primero.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        try {
-            String idStr = tableListClients.getValueAt(filaSelected, 4).toString();
-            int clientId = Integer.parseInt(idStr);
-
-            Optional<Client> clientOpt = clientService.findById(clientId);
-            if (clientOpt.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No se encontró el cliente con ID: " + clientId, "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            Client client = clientOpt.get();
-            List<Client> clients = new ArrayList<>();
-            clients.add(client);
-
-            titleList.setText("Historial de Cliente: " + client.getDocumentId());
-            loadHistoricalPlanToTableAsync(clients);
-
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "El valor de ID no es válido.", "Error de formato", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Ocurrió un error al obtener el cliente: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+    public void showWarning(String message, String title) {
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.WARNING_MESSAGE);
     }
 
-    private void btnCleanTableActionPerformed(ActionEvent evt) {
-        tableModelHistorical.setRowCount(0);
-        titleList.setText("Lista de Historial");
+    public void showSuccess(String message, String title) {
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
+
+    // Getters
+    public JTextField getTxtName() { return txtName; }
+    public JTextField getTxtLastName() { return txtLastName; }
+    public JTextField getTxtDni() { return txtDni; }
+    public JTextField getTxtPhone1() { return txtPhone1; }
+    public JComboBox<String> getComboBoxPlan() { return comboBoxPlan; }
+    public JTable getTableListClients() { return tableListClients; }
+
+    public JRadioButton getBtnClientActive() { return btnClientActive; }
+    public JRadioButton getBtnClientInactive() { return btnClientInactive; }
+    public JRadioButton getBtnPlanActive() { return btnPlanActive; }
+    public JRadioButton getBtnPlanInactive() { return btnPlanInactive; }
+    public JRadioButton getBtnName() { return btnName; }
+    public JRadioButton getBtnLastName() { return btnLastName; }
+    public JRadioButton getBtnDni() { return btnDni; }
+    public JRadioButton getBtnPhone() { return btnPhone; }
+    public JRadioButton getBtnPlan() { return btnPlan; }
+
+    public JLabel getTitleCharge() { return titleCharge; }
+    public JLabel getTitleList() { return titleList; }
+
+    public JButton getBtnSearch() { return btnSearch; }
+    public JButton getBtnCleanPanels() { return btnCleanPanels; }
+    public JButton getBtnSelect() { return btnSelect; }
+    public JButton getBtnCleanTable() { return btnCleanTable; }
 
     // =========================================================================
-    // IMPLEMENTACIÓN DE Scrollable: Permite scroll vertical adaptativo
+    // IMPLEMENTACIÓN DE Scrollable
     // =========================================================================
     @Override
     public Dimension getPreferredScrollableViewportSize() {
@@ -555,7 +395,7 @@ public class HistoricalPanel extends JPanel implements Scrollable {
 
     @Override
     public boolean getScrollableTracksViewportWidth() {
-        return true; // Llenar el ancho del viewport
+        return true;
     }
 
     @Override

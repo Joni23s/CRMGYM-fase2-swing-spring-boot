@@ -79,6 +79,7 @@ public class MainFrame extends JFrame {
     private final PlansPanel plansPanel;
     private final ClientPanel clientPanel;
     private final PaymentPanel paymentPanel;
+    private final HistoricalPanel historicalPanel;
 
     // Inyección del panel modular de Dashboard centralizado por Spring Boot
     private final DashboardPanel dashboardPanel;
@@ -90,7 +91,8 @@ public class MainFrame extends JFrame {
     public MainFrame(DashboardPanel dashboardPanel, ClientService clientService, PlanService planService,
             HistoricalPlanService historicalPlanService, PaymentService paymentService,
             PlanValidation planValidation, ClientValidation clientValidation, ButtonFactory buttonFactory,
-            PlansPanel plansPanel, ClientPanel clientPanel, PaymentPanel paymentPanel) {
+            PlansPanel plansPanel, ClientPanel clientPanel, PaymentPanel paymentPanel,
+            HistoricalPanel historicalPanel) {
         this.dashboardPanel = dashboardPanel;
         this.clientService = clientService;
         this.planService = planService;
@@ -102,6 +104,7 @@ public class MainFrame extends JFrame {
         this.plansPanel = plansPanel;
         this.clientPanel = clientPanel;
         this.paymentPanel = paymentPanel;
+        this.historicalPanel = historicalPanel;
 
         initComponents();
     }
@@ -143,7 +146,7 @@ public class MainFrame extends JFrame {
         sidebarPanel.addNavigationListener("Pagos",
                 e -> showPanel(this.paymentPanel));
         sidebarPanel.addNavigationListener("Historial",
-                e -> showPanel(new HistoricalPanel(clientService, planService, historicalPlanService, buttonFactory)));
+                e -> showPanel(this.historicalPanel));
 
         // Mostrar la pantalla de Inicio por defecto al iniciar la aplicación
         showDashboardHome();
@@ -196,7 +199,7 @@ public class MainFrame extends JFrame {
 
     public void selectHistoryPanel() {
         sidebarPanel.setActiveButtonByText("Historial");
-        showPanel(new HistoricalPanel(clientService, planService, historicalPlanService, buttonFactory));
+        showPanel(this.historicalPanel);
     }
 
     public void selectPaymentsPanel() {
