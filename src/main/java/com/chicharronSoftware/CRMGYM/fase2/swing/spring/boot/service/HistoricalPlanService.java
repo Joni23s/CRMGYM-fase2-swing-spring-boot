@@ -42,30 +42,8 @@ public class HistoricalPlanService {
         historicalPlanRepository.save(historical);
     }
 
-
-
-    public List<HistoricalPlan> findByIsActive(boolean status){
-        return historicalPlanRepository.findByIsActive(status);
-    }
-
-    public boolean deactivate(Long id) {
-        return historicalPlanRepository.findById(id).map(h -> {
-            h.setIsActive(false);
-            historicalPlanRepository.save(h);
-            return true;
-        }).orElse(false);
-    }
-
-    public boolean activate(Long id) {
-        return historicalPlanRepository.findById(id).map(h -> {
-            h.setIsActive(true);
-            historicalPlanRepository.save(h);
-            return true;
-        }).orElse(false);
-    }
-
     public List<HistoricalPlanDTO> findByClientsWithDetails(List<Client> clients) {
-        return  historicalPlanRepository.findByClientsWithDetails(clients)
+        return historicalPlanRepository.findByClientsWithDetails(clients)
                 .stream()
                 .map(HistoricalPlanMapper::toDTO)
                 .toList();
@@ -80,7 +58,7 @@ public class HistoricalPlanService {
     }
 
     public List<HistoricalPlanDTO> findByClientWithDetails(String documentId) {
-        return  historicalPlanRepository.findByClientWithDetails(documentId)
+        return historicalPlanRepository.findByClientWithDetails(documentId)
                 .stream()
                 .map(HistoricalPlanMapper::toDTO)
                 .toList();

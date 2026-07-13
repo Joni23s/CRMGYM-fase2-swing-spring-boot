@@ -11,33 +11,30 @@ import java.util.List;
 @Repository
 public interface ClientRepository extends JpaRepository<Client, Integer> {
 
-    @Query("SELECT c FROM Client c LEFT JOIN FETCH c.currentPlan")
-    List<Client> findAllWithPlan();
-
     // [MEJORA JUNIOR] Con @EntityGraph le decimos a Hibernate que, además de buscar
-    // al cliente, nos traiga su "currentPlan" en la misma consulta (un LEFT OUTER JOIN).
+    // al cliente, nos traiga su "currentPlan" en la misma consulta (un LEFT OUTER
+    // JOIN).
     // Esto mata el problema N+1 al mapear los DTOs de listas completas.
-    
-    @EntityGraph(attributePaths = {"currentPlan"})
+
+    @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findAll();
 
-    @EntityGraph(attributePaths = {"currentPlan"})
+    @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findByNameIgnoreCase(String Name);
 
-    @EntityGraph(attributePaths = {"currentPlan"})
+    @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findByLastNameIgnoreCase(String lastName);
 
-
-    @EntityGraph(attributePaths = {"currentPlan"})
+    @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findByIsActive(boolean isActive);
 
-    @EntityGraph(attributePaths = {"currentPlan"})
+    @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findByPhoneNumber(String phone);
 
-    @EntityGraph(attributePaths = {"currentPlan"})
+    @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findByEmail(String mail);
 
-    @EntityGraph(attributePaths = {"currentPlan"})
+    @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findByCurrentPlan_NamePlan(String namePlan);
 
 }

@@ -38,27 +38,14 @@ public class PaymentService {
         return paymentRepository.save(payment);
     }
 
-    public void deleteById(Long id) {
-        paymentRepository.deleteById(id);
-    }
-
     // --- Consultas comunes ---
     public List<Payment> findByClientDocumentId(int documentId) {
         return paymentRepository.findByClient_DocumentId(documentId);
     }
 
-    public List<PaymentDTO> findByClientDocumentIdDTO(int documentId) {
-        return findByClientDocumentId(documentId)
-                .stream()
-                .map(PaymentMapper::toDTO)
-                .collect(Collectors.toList());
-    }
-
     public List<Payment> findByStatus(PaymentStatus status) {
         return paymentRepository.findByPaymentStatus(status);
     }
-
-
 
     // --- DTO Helpers ---
     public List<PaymentDTO> getAllPaymentsDTO() {
@@ -68,38 +55,7 @@ public class PaymentService {
                 .collect(Collectors.toList());
     }
 
-    public PaymentDTO toDTO(Payment payment) {
-        return PaymentMapper.toDTO(payment);
-    }
-
     // --- Lógica de negocio ---
-    /**
-     * Registra un nuevo pago con cálculo de monto final.
-     * Se espera que baseAmount y discountApplied ya estén definidos.
-     */
-    public Payment registerPayment(Client client, BigDecimal baseAmount, BigDecimal discount,
-                                   LocalDate period, LocalDate paymentDate,
-                                   PaymentStatus status, String method) {
-
-        BigDecimal finalAmount = baseAmount.subtract(discount != null ? discount : BigDecimal.ZERO);
-
-        Payment payment = Payment.builder()
-                .client(client)
-                .baseAmount(baseAmount)
-                .discountApplied(discount)
-                .finalAmount(finalAmount)
-                .period(period)
-                .paymentDate(paymentDate)
-                .paymentStatus(status)
-                .paymentMethod(Enum.valueOf(
-                        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod.class,
-                        method))
-                .build();
-
-        return paymentRepository.save(payment);
-    }
-
-
     public List<Payment> findAllByClientId(Integer clientId) {
         return paymentRepository.findByClient_DocumentIdOrderByPaymentDateDesc(clientId);
     }
@@ -113,8 +69,10 @@ public class PaymentService {
      */
     public void markOverduePayments(LocalDate today) {
         // [MEJORA JUNIOR] En lugar de obtener todos los pagos pendientes y recorrerlos
-        // en un bucle for() (lo que genera una consulta SELECT y múltiples UPDATE por cada pago),
-        // llamamos a la query masiva que actualiza todo directamente en la base de datos de una vez.
+        // en un bucle for() (lo que genera una consulta SELECT y múltiples UPDATE por
+        // cada pago),
+        // llamamos a la query masiva que actualiza todo directamente en la base de
+        // datos de una vez.
         paymentRepository.markOverduePaymentsBulk(today);
     }
 }

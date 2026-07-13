@@ -21,10 +21,6 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final HistoricalPlanService historicalPlanService;
 
-    public List<Client> findAll() {
-        return clientRepository.findAll();
-    }
-
     public List<ClientDTO> getAllClientsDTO() {
         return clientRepository.findAll()
                 .stream()
@@ -43,8 +39,6 @@ public class ClientService {
     public List<Client> findByLastName(String lastName) {
         return clientRepository.findByLastNameIgnoreCase(lastName);
     }
-
-
 
     public List<Client> findByIsActive(boolean isActive) {
         return clientRepository.findByIsActive(isActive);
@@ -80,29 +74,6 @@ public class ClientService {
             // Registrar historial con el cliente persistido
             historicalPlanService.registerNewPlan(client, client.getCurrentPlan());
         }
-    }
-
-    public void changeStatusAndPlan(Integer clientId, boolean newStatus, Plan newPlan) {
-        clientRepository.findById(clientId).ifPresent(client -> {
-
-            // Si el cliente se está desactivando o cambiando de plan, cerrar el historial activo
-            if (!newStatus ||
-                    (newPlan != null && client.getCurrentPlan() != null &&
-                            !client.getCurrentPlan().getIdPlan().equals(newPlan.getIdPlan()))) {
-                historicalPlanService.closeCurrentPlan(client);
-            }
-
-            // Actualizar el estado
-            client.setIsActive(newStatus);
-
-            // Si hay un nuevo plan y está activo, actualizarlo y registrar en historial
-            if (newStatus && newPlan != null) {
-                client.setCurrentPlan(newPlan);
-                historicalPlanService.registerNewPlan(client, newPlan);
-            }
-
-            clientRepository.save(client);
-        });
     }
 
     public List<Client> findByPhoneNumber(String phone) {
