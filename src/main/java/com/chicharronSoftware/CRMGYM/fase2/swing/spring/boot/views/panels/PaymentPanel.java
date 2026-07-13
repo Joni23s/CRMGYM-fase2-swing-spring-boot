@@ -1,30 +1,16 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Payment;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PaymentService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.utils.FormatterUtils;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -32,8 +18,6 @@ import org.springframework.stereotype.Component;
 public class PaymentPanel extends JPanel implements Scrollable {
 
     private DefaultTableModel tableModelPays;
-    private final PaymentService paymentService;
-    private final ClientService clientService;
     private final ButtonFactory buttonFactory;
 
     private boolean isEditMode = false;
@@ -60,19 +44,11 @@ public class PaymentPanel extends JPanel implements Scrollable {
     private JButton btnAll;
     private JButton btnPending;
     private JButton btnConfirmed;
-    private JButton btnOverdue;
 
     @Autowired
-    public PaymentPanel(PaymentService paymentService, ClientService clientService, ButtonFactory buttonFactory) {
-        this.paymentService = paymentService;
-        this.clientService = clientService;
+    public PaymentPanel(ButtonFactory buttonFactory) {
         this.buttonFactory = buttonFactory;
-
         initComponentsHandCoded();
-        initPayTable();
-        loadPaymentMethod();
-        loadPaymentStatus();
-        resetForm();
     }
 
     private void initComponentsHandCoded() {
@@ -160,10 +136,7 @@ public class PaymentPanel extends JPanel implements Scrollable {
         actionPanel.setOpaque(false);
 
         btnSave = buttonFactory.createPrimaryButton("💾 Guardar");
-        btnSave.addActionListener(e -> btnSaveActionPerformed(e));
-
         btnSearch = buttonFactory.createSecondaryButton("🔍 Buscar DNI");
-        btnSearch.addActionListener(e -> btnSearchActionPerformed(e));
 
         actionPanel.add(btnSave);
         actionPanel.add(btnSearch);
@@ -173,7 +146,6 @@ public class PaymentPanel extends JPanel implements Scrollable {
         cardPanel.add(actionPanel, gbc);
 
         btnClean = buttonFactory.createSecondaryButton("🧹 Limpiar Campos");
-        btnClean.addActionListener(e -> btnCleanActionPerformed(e));
         gbc.gridy = row++;
         gbc.insets = new Insets(4, 0, 4, 0);
         cardPanel.add(btnClean, gbc);
@@ -193,16 +165,9 @@ public class PaymentPanel extends JPanel implements Scrollable {
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
 
         btnAll = buttonFactory.createSecondaryButton("Todos");
-        btnAll.addActionListener(e -> btnAllActionPerformed(e));
-
         btnConfirmed = buttonFactory.createSecondaryButton("Confirmados");
-        btnConfirmed.addActionListener(e -> btnConfirmedActionPerformed(e));
-
         btnPending = buttonFactory.createSecondaryButton("Pendientes");
-        btnPending.addActionListener(e -> btnPendingActionPerformed(e));
-
         btnModify = buttonFactory.createPrimaryButton("📝 Modificar");
-        btnModify.addActionListener(e -> btnModifyActionPerformed(e));
 
         filterPanel.add(btnAll);
         filterPanel.add(btnConfirmed);
@@ -252,7 +217,7 @@ public class PaymentPanel extends JPanel implements Scrollable {
         });
     }
 
-    private void initPayTable() {
+    public void initPayTable() {
         tableModelPays = new DefaultTableModel() {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -264,70 +229,9 @@ public class PaymentPanel extends JPanel implements Scrollable {
                 "ID", "DNI", "Cliente", "Plan", "Periodo", "Fecha de Pago", "Precio Base", "Descuento", "Precio Final",
                 "Método de Pago", "Estado"
         });
-        loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
     }
 
-    // [MEJORA JUNIOR] Se eliminaron los formateadores estáticos locales (DATE_FORMATTER, formatMoney)
-    // para delegar esta responsabilidad a FormatterUtils, reduciendo el acoplamiento y repetición de código.
-
-    private void loadPaymentsToTableAsync(java.util.concurrent.Callable<List<PaymentDTO>> loader) {
-        tableModelPays.setRowCount(0);
-        tableModelPays.addRow(new Object[] {
-                "", "", "Cargando datos...", "", "", "", "", "", "", "", ""
-        });
-        
-        btnSearch.setEnabled(false);
-
-        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
-            loader,
-            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<List<PaymentDTO>>() {
-                @Override
-                public void onSuccess(List<PaymentDTO> payments) {
-                    tableModelPays.setRowCount(0);
-                    for (PaymentDTO dto : payments) {
-                        tableModelPays.addRow(new Object[] {
-                                dto.getIdPayment() != null ? dto.getIdPayment().toString() : "",
-                                dto.getDocumentId() != null ? dto.getDocumentId().toString() : "",
-                                dto.getNameClient(),
-                                dto.getNamePlan(),
-                                FormatterUtils.formatDate(dto.getPeriod()),
-                                FormatterUtils.formatDate(dto.getPaymentDate()),
-                                FormatterUtils.formatCurrency(dto.getBaseAmount()),
-                                FormatterUtils.formatCurrency(dto.getDiscountApplied()),
-                                FormatterUtils.formatCurrency(dto.getFinalAmount()),
-                                dto.getPaymentMethod(),
-                                dto.getPaymentStatus()
-                        });
-                    }
-                    btnSearch.setEnabled(true);
-                }
-
-                @Override
-                public void onError(Exception ex) {
-                    btnSearch.setEnabled(true);
-                    JOptionPane.showMessageDialog(PaymentPanel.this, "Error cargando pagos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        );
-    }
-
-    private void loadPaymentMethod() {
-        comboBoxPayment_method.removeAllItems();
-        comboBoxPayment_method.addItem("Seleccione un Método *");
-        for (PaymentMethod method : PaymentMethod.values()) {
-            comboBoxPayment_method.addItem(method.getDescripcion());
-        }
-    }
-
-    private void loadPaymentStatus() {
-        comboBoxPayment_status.removeAllItems();
-        comboBoxPayment_status.addItem("Seleccione un Estado *");
-        for (PaymentStatus status : PaymentStatus.values()) {
-            comboBoxPayment_status.addItem(status.getDescripcion());
-        }
-    }
-
-    private void resetForm() {
+    public void resetForm() {
         txtDni.setText("");
         txtBase_amount.setText("");
         txtDiscount.setText("");
@@ -335,8 +239,8 @@ public class PaymentPanel extends JPanel implements Scrollable {
         jDatePeriod.setDate(null);
         jDatePay.setDate(null);
 
-        comboBoxPayment_method.setSelectedIndex(0);
-        comboBoxPayment_status.setSelectedIndex(0);
+        if (comboBoxPayment_method.getItemCount() > 0) comboBoxPayment_method.setSelectedIndex(0);
+        if (comboBoxPayment_status.getItemCount() > 0) comboBoxPayment_status.setSelectedIndex(0);
 
         titleCharge.setText("Nuevo Pago");
         isEditMode = false;
@@ -351,229 +255,79 @@ public class PaymentPanel extends JPanel implements Scrollable {
         comboBoxPayment_status.setBorder(UIManager.getBorder("ComboBox.border"));
     }
 
-    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {
-        try {
-            String dniText = txtDni.getText().trim();
-            Date periodDate = jDatePeriod.getDate();
-            Date paymentDate = jDatePay.getDate();
-            String baseAmountText = txtBase_amount.getText().trim();
-            String discountText = txtDiscount.getText().trim();
-            String paymentMethodDesc = (String) comboBoxPayment_method.getSelectedItem();
-            String paymentStatusDesc = (String) comboBoxPayment_status.getSelectedItem();
-
-            if (dniText.isEmpty() || periodDate == null || paymentDate == null || baseAmountText.isEmpty() ||
-                comboBoxPayment_method.getSelectedIndex() == 0 || comboBoxPayment_status.getSelectedIndex() == 0) {
-                
-                // Resaltar campos vacíos en rojo
-                if (dniText.isEmpty()) txtDni.setBorder(BorderFactory.createLineBorder(Color.RED));
-                if (baseAmountText.isEmpty()) txtBase_amount.setBorder(BorderFactory.createLineBorder(Color.RED));
-                if (comboBoxPayment_method.getSelectedIndex() == 0) comboBoxPayment_method.setBorder(BorderFactory.createLineBorder(Color.RED));
-                if (comboBoxPayment_status.getSelectedIndex() == 0) comboBoxPayment_status.setBorder(BorderFactory.createLineBorder(Color.RED));
-                
-                JOptionPane.showMessageDialog(this, "Por favor completá todos los campos obligatorios (*).", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int dni;
-            try {
-                dni = Integer.parseInt(dniText);
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "El DNI debe ser un número válido.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            Optional<Client> clientOpt = clientService.findById(dni);
-            if (clientOpt.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No se encontró un cliente con DNI " + dni, "Cliente no encontrado", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            Client client = clientOpt.get();
-
-            baseAmountText = baseAmountText.replace(",", ".").replaceAll("[^0-9.]", "");
-            discountText = discountText.replace(",", ".").replaceAll("[^0-9.]", "");
-
-            BigDecimal baseAmount;
-            BigDecimal discount;
-
-            try {
-                baseAmount = new BigDecimal(baseAmountText);
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "El monto base no es válido.", "Error en monto base", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            try {
-                discount = discountText.isEmpty() ? BigDecimal.ZERO : new BigDecimal(discountText);
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "El descuento no es válido.", "Error en descuento", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            PaymentMethod paymentMethod = Arrays.stream(PaymentMethod.values())
-                    .filter(pm -> pm.getDescripcion().equals(paymentMethodDesc))
-                    .findFirst()
-                    .orElse(PaymentMethod.EFECTIVO);
-
-            PaymentStatus paymentStatus = Arrays.stream(PaymentStatus.values())
-                    .filter(ps -> ps.getDescripcion().equals(paymentStatusDesc))
-                    .findFirst()
-                    .orElse(PaymentStatus.PENDIENTE);
-
-            BigDecimal finalAmount = baseAmount.subtract(discount);
-            if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
-                JOptionPane.showMessageDialog(this, "El monto final no puede ser negativo.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            LocalDate period = periodDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            LocalDate payment = paymentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
-            Payment paymentEntity;
-            if (isEditMode && editingPaymentId != null) {
-                paymentEntity = paymentService.findById(editingPaymentId)
-                        .orElseThrow(() -> new RuntimeException("No se encontró el pago a modificar."));
-                paymentEntity.setPeriod(period);
-                paymentEntity.setPaymentDate(payment);
-                paymentEntity.setBaseAmount(baseAmount);
-                paymentEntity.setDiscountApplied(discount);
-                paymentEntity.setFinalAmount(finalAmount);
-                paymentEntity.setPaymentMethod(paymentMethod);
-                paymentEntity.setPaymentStatus(paymentStatus);
-                paymentEntity.setClient(client);
-            } else {
-                paymentEntity = Payment.builder()
-                        .period(period)
-                        .paymentDate(payment)
-                        .baseAmount(baseAmount)
-                        .discountApplied(discount)
-                        .finalAmount(finalAmount)
-                        .paymentMethod(paymentMethod)
-                        .paymentStatus(paymentStatus)
-                        .client(client)
-                        .build();
-            }
-
-            paymentService.save(paymentEntity);
-            
-            String msg = isEditMode ? "Pago actualizado correctamente." : "Pago guardado correctamente.";
-            JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Ocurrió un error al guardar el pago: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        }
-
-        resetForm();
-        loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
+    public void showLoadingTable() {
+        tableModelPays.setRowCount(0);
+        tableModelPays.addRow(new Object[] {
+                "", "", "Cargando datos...", "", "", "", "", "", "", "", ""
+        });
+        enableSearchButton(false);
     }
 
-    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {
-        String dniText = txtDni.getText().trim();
-        if (dniText.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Ingrese un DNI válido.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        try {
-            int dniNumber = Integer.parseInt(dniText);
-            Optional<Client> client = clientService.findById(dniNumber);
-
-            if (client.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No se encontró un cliente con ese DNI.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            Optional<Payment> lastPayment = paymentService.findLastPaymentByClientId(client.get().getDocumentId());
-
-            if (lastPayment.isPresent()) {
-                txtBase_amount.setText(String.valueOf(lastPayment.get().getBaseAmount()));
-                
-                // FIX: discountApplied en vez de lastPayment.getClass()
-                txtDiscount.setText(lastPayment.get().getDiscountApplied() != null ? String.valueOf(lastPayment.get().getDiscountApplied()) : "0");
-                
-                comboBoxPayment_method.setSelectedItem(lastPayment.get().getPaymentMethod().getDescripcion());
-                comboBoxPayment_status.setSelectedItem(lastPayment.get().getPaymentStatus().getDescripcion());
-                
-                jDatePeriod.setDate(java.sql.Date.valueOf(lastPayment.get().getPeriod()));
-                jDatePay.setDate(java.sql.Date.valueOf(lastPayment.get().getPaymentDate()));
-            } else {
-                // Si no hay pagos, precargar el costo de su plan actual
-                if (client.get().getCurrentPlan() != null) {
-                    txtBase_amount.setText(String.valueOf(client.get().getCurrentPlan().getValue()));
-                }
-                txtDiscount.setText("0");
-                jDatePay.setDate(new Date());
-                jDatePeriod.setDate(new Date());
-                JOptionPane.showMessageDialog(this, "El cliente no tiene pagos registrados. Se precargó el costo de su plan actual.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
-            }
-
-            List<Payment> payments = paymentService.findAllByClientId(client.get().getDocumentId());
-            loadPaymentsToTableAsync(() -> payments.stream()
-                    .map(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper::toDTO)
-                    .collect(java.util.stream.Collectors.toList()));
-
-            titleCharge.setText("Pago de " + client.get().getName());
-
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "El DNI debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error al buscar el cliente: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
+    public void updateTable(List<PaymentDTO> payments) {
+        tableModelPays.setRowCount(0);
+        for (PaymentDTO dto : payments) {
+            tableModelPays.addRow(new Object[] {
+                    dto.getIdPayment() != null ? dto.getIdPayment().toString() : "",
+                    dto.getDocumentId() != null ? dto.getDocumentId().toString() : "",
+                    dto.getNameClient(),
+                    dto.getNamePlan(),
+                    FormatterUtils.formatDate(dto.getPeriod()),
+                    FormatterUtils.formatDate(dto.getPaymentDate()),
+                    FormatterUtils.formatCurrency(dto.getBaseAmount()),
+                    FormatterUtils.formatCurrency(dto.getDiscountApplied()),
+                    FormatterUtils.formatCurrency(dto.getFinalAmount()),
+                    dto.getPaymentMethod(),
+                    dto.getPaymentStatus()
+            });
         }
     }
 
-    private void btnModifyActionPerformed(java.awt.event.ActionEvent evt) {
-        int selectedRow = tableListPayments.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Selecciona un pago primero.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        Long paymentId = Long.parseLong(tableListPayments.getValueAt(selectedRow, 0).toString());
-        Payment payment = paymentService.findById(paymentId)
-                .orElseThrow(() -> new RuntimeException("No se encontró el pago."));
-
-        txtDni.setText(String.valueOf(payment.getClient().getDocumentId()));
-        txtBase_amount.setText(String.valueOf(payment.getBaseAmount()));
-        txtDiscount.setText(payment.getDiscountApplied() != null ? payment.getDiscountApplied().toString() : "0");
-        comboBoxPayment_method.setSelectedItem(payment.getPaymentMethod().getDescripcion());
-        comboBoxPayment_status.setSelectedItem(payment.getPaymentStatus().getDescripcion());
-
-        jDatePeriod.setDate(java.sql.Date.valueOf(payment.getPeriod()));
-        jDatePay.setDate(java.sql.Date.valueOf(payment.getPaymentDate()));
-
-        isEditMode = true;
-        // FIX: guarda el ID del pago que se edita para actualizar el mismo registro
-        editingPaymentId = paymentId;
-        txtDni.setEnabled(false);
-        titleCharge.setText("Modificar Pago");
+    public void enableSearchButton(boolean enabled) {
+        btnSearch.setEnabled(enabled);
     }
 
-    private void btnAllActionPerformed(java.awt.event.ActionEvent evt) {
-        titleList.setText("Todos los Pagos");
-        loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
+    public void showError(String message, String title) {
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
     }
 
-    private void btnConfirmedActionPerformed(java.awt.event.ActionEvent evt) {
-        titleList.setText("Pagos Confirmados");
-        loadPaymentsToTableAsync(() -> paymentService.findByStatus(PaymentStatus.CONFIRMADO).stream()
-                .map(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper::toDTO)
-                .collect(java.util.stream.Collectors.toList()));
+    public void showWarning(String message, String title) {
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.WARNING_MESSAGE);
     }
 
-    private void btnPendingActionPerformed(java.awt.event.ActionEvent evt) {
-        titleList.setText("Pagos Pendientes");
-        loadPaymentsToTableAsync(() -> paymentService.findByStatus(PaymentStatus.PENDIENTE).stream()
-                .map(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper::toDTO)
-                .collect(java.util.stream.Collectors.toList()));
+    public void showSuccess(String message, String title) {
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private void btnCleanActionPerformed(java.awt.event.ActionEvent evt) {
-        resetForm();
-    }
+    // Getters y Setters
+    public JTextField getTxtDni() { return txtDni; }
+    public JTextField getTxtBase_amount() { return txtBase_amount; }
+    public JTextField getTxtDiscount() { return txtDiscount; }
+    public JComboBox<String> getComboBoxPayment_method() { return comboBoxPayment_method; }
+    public JComboBox<String> getComboBoxPayment_status() { return comboBoxPayment_status; }
+    
+    public com.toedter.calendar.JDateChooser getjDatePay() { return jDatePay; }
+    public com.toedter.calendar.JDateChooser getjDatePeriod() { return jDatePeriod; }
+    public JTable getTableListPayments() { return tableListPayments; }
+    
+    public JLabel getTitleCharge() { return titleCharge; }
+    public JLabel getTitleList() { return titleList; }
+    
+    public JButton getBtnSave() { return btnSave; }
+    public JButton getBtnSearch() { return btnSearch; }
+    public JButton getBtnClean() { return btnClean; }
+    public JButton getBtnModify() { return btnModify; }
+    public JButton getBtnAll() { return btnAll; }
+    public JButton getBtnPending() { return btnPending; }
+    public JButton getBtnConfirmed() { return btnConfirmed; }
+
+    public boolean isEditMode() { return isEditMode; }
+    public void setEditMode(boolean editMode) { isEditMode = editMode; }
+    
+    public Long getEditingPaymentId() { return editingPaymentId; }
+    public void setEditingPaymentId(Long editingPaymentId) { this.editingPaymentId = editingPaymentId; }
 
     // =========================================================================
-    // IMPLEMENTACIÓN DE Scrollable: Permite scroll vertical adaptativo
+    // IMPLEMENTACIÓN DE Scrollable
     // =========================================================================
     @Override
     public Dimension getPreferredScrollableViewportSize() {
@@ -592,7 +346,7 @@ public class PaymentPanel extends JPanel implements Scrollable {
 
     @Override
     public boolean getScrollableTracksViewportWidth() {
-        return true; // Llenar el ancho del viewport
+        return true;
     }
 
     @Override
