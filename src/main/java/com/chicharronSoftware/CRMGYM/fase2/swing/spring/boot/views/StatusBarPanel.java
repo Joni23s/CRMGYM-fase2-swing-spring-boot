@@ -1,9 +1,12 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views;
 
 import net.miginfocom.swing.MigLayout;
+import org.springframework.stereotype.Component;
+
 import javax.swing.*;
 import java.awt.*;
 
+@Component
 public class StatusBarPanel extends JPanel {
 
     private static final Color TEXT_COLOR = Color.decode("#94a3b8"); // Slate 400

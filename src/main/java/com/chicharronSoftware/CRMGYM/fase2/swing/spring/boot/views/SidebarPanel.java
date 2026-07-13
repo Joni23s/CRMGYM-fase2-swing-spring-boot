@@ -1,12 +1,15 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views;
 
 import net.miginfocom.swing.MigLayout;
+import org.springframework.stereotype.Component;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class SidebarPanel extends JPanel {
 
     private final List<JButton> menuButtons = new ArrayList<>();

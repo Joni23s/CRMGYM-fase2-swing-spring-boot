@@ -69,43 +69,21 @@ import java.awt.*;
 @Profile("!test")
 public class MainFrame extends JFrame {
 
-    private final ClientService clientService;
-    private final PlanService planService;
-    private final HistoricalPlanService historicalPlanService;
-    private final PaymentService paymentService;
-    private final PlanValidation planValidation;
-    private final ClientValidation clientValidation;
-    private final ButtonFactory buttonFactory; // [MEJORA JUNIOR] Fábrica inyectada para pasar a paneles
-    private final PlansPanel plansPanel;
-    private final ClientPanel clientPanel;
-    private final PaymentPanel paymentPanel;
-    private final HistoricalPanel historicalPanel;
+    private final SidebarPanel sidebarPanel;
+    private final StatusBarPanel statusBarPanel;
+    private final JPanel centerArea;
 
-    // Inyección del panel modular de Dashboard centralizado por Spring Boot
-    private final DashboardPanel dashboardPanel;
+    private MainNavigationListener navigationListener;
 
-    private SidebarPanel sidebarPanel;
-    private JPanel centerArea;
+    public interface MainNavigationListener {
+        void onNavigateRequest(String panelName);
+    }
 
     @Autowired
-    public MainFrame(DashboardPanel dashboardPanel, ClientService clientService, PlanService planService,
-            HistoricalPlanService historicalPlanService, PaymentService paymentService,
-            PlanValidation planValidation, ClientValidation clientValidation, ButtonFactory buttonFactory,
-            PlansPanel plansPanel, ClientPanel clientPanel, PaymentPanel paymentPanel,
-            HistoricalPanel historicalPanel) {
-        this.dashboardPanel = dashboardPanel;
-        this.clientService = clientService;
-        this.planService = planService;
-        this.historicalPlanService = historicalPlanService;
-        this.paymentService = paymentService;
-        this.planValidation = planValidation;
-        this.clientValidation = clientValidation;
-        this.buttonFactory = buttonFactory;
-        this.plansPanel = plansPanel;
-        this.clientPanel = clientPanel;
-        this.paymentPanel = paymentPanel;
-        this.historicalPanel = historicalPanel;
-
+    public MainFrame(SidebarPanel sidebarPanel, StatusBarPanel statusBarPanel) {
+        this.sidebarPanel = sidebarPanel;
+        this.statusBarPanel = statusBarPanel;
+        this.centerArea = new JPanel(new MigLayout("fill, ins 0"));
         initComponents();
     }
 
@@ -125,38 +103,25 @@ public class MainFrame extends JFrame {
         setContentPane(rootPanel);
 
         // --- 1. Menú Lateral (SidebarPanel) ---
-        sidebarPanel = new SidebarPanel();
         rootPanel.add(sidebarPanel, "cell 0 0, grow");
 
         // --- 2. Área Central de Intercambio (Swapping de componentes) ---
-        centerArea = new JPanel(new MigLayout("fill, ins 0"));
         centerArea.setOpaque(false);
         rootPanel.add(centerArea, "cell 1 0, grow");
 
         // --- 3. Barra de Estado Inferior ---
-        StatusBarPanel statusBarPanel = new StatusBarPanel();
         rootPanel.add(statusBarPanel, "cell 0 1 2 1, grow");
+    }
 
-        // --- Mapeo de Eventos de Navegación del Sidebar ---
-        sidebarPanel.addNavigationListener("Inicio", e -> showDashboardHome());
-        sidebarPanel.addNavigationListener("Socios",
-                e -> showPanel(this.clientPanel));
-        sidebarPanel.addNavigationListener("Planes",
-                e -> showPanel(this.plansPanel));
-        sidebarPanel.addNavigationListener("Pagos",
-                e -> showPanel(this.paymentPanel));
-        sidebarPanel.addNavigationListener("Historial",
-                e -> showPanel(this.historicalPanel));
-
-        // Mostrar la pantalla de Inicio por defecto al iniciar la aplicación
-        showDashboardHome();
+    public void setNavigationListener(MainNavigationListener listener) {
+        this.navigationListener = listener;
     }
 
     /**
      * Intercambia el contenedor para presentar la pantalla modular del Dashboard.
      * Desacopla todo el pintado directo de KPIs y Gráficos hacia DashboardPanel.
      */
-    private void showDashboardHome() {
+    public void showDashboard(DashboardPanel dashboardPanel) {
         // [MEJORA JUNIOR] Invocamos al método de refresco para que recalcule
         // todas las métricas de socios y caja antes de pintar la pantalla principal.
         dashboardPanel.refreshData();
@@ -193,17 +158,20 @@ public class MainFrame extends JFrame {
 
     // Métodos auxiliares para la navegación interactiva desde otros paneles
     public void selectClientsPanel() {
-        sidebarPanel.setActiveButtonByText("Socios");
-        showPanel(this.clientPanel);
+        if (navigationListener != null) {
+            navigationListener.onNavigateRequest("Socios");
+        }
     }
 
     public void selectHistoryPanel() {
-        sidebarPanel.setActiveButtonByText("Historial");
-        showPanel(this.historicalPanel);
+        if (navigationListener != null) {
+            navigationListener.onNavigateRequest("Historial");
+        }
     }
 
     public void selectPaymentsPanel() {
-        sidebarPanel.setActiveButtonByText("Pagos");
-        showPanel(this.paymentPanel);
+        if (navigationListener != null) {
+            navigationListener.onNavigateRequest("Pagos");
+        }
     }
 }
