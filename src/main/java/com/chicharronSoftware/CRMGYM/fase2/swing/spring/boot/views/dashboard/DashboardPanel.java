@@ -2,10 +2,6 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.dashboard;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Payment;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PaymentService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.VectorIcon;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.MainFrame;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.DashboardTable;
@@ -14,71 +10,41 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.utils.FormatterUtils;
 
 import net.miginfocom.swing.MigLayout;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
-/**
- * =================================================================================
- * GUÍA DE ARQUITECTURA SÓLIDA: SEPARACIÓN DE RESPONSABILIDADES Y CONTENEDORES
- * =================================================================================
- *
- * SISTEMA RESPONSIVE DE 3 BREAKPOINTS:
- *   - LARGE  (width >= 950px): Layout de escritorio completo
- *   - MEDIUM (650 <= width < 950px): KPIs en grilla 2+1, splitGrid lado a lado 55/45
- *   - SMALL  (width < 650px): Todo apilado verticalmente con scroll
- */
 @Component
 public class DashboardPanel extends JPanel implements Scrollable {
 
-    // ─── Constantes de Breakpoints ───────────────────────────────────────────
     private static final int BP_LARGE  = 950;
     private static final int BP_MEDIUM = 650;
 
-    // ─── Enumerado de estado del layout ──────────────────────────────────────
     private enum LayoutMode { LARGE, MEDIUM, SMALL }
-
-    private final ClientService  clientService;
-    private final PaymentService paymentService;
-    private final PlanService    planService;
 
     private DashboardTable     tableRecentPayments;
     private DefaultTableModel  tableModel;
 
-    // [MEJORA JUNIOR] Declaramos los paneles como variables de instancia para poder
-    // actualizar sus datos desde cualquier método de la clase.
     private UpcomingExpirationsPanel expirationsPanel;
     private RecentActivityPanel      activityPanel;
 
-    // [MEJORA JUNIOR] Declaramos las tarjetas de métricas como variables de instancia
-    // para poder actualizar sus valores numéricos dinámicamente cuando el usuario navegue.
     private MetricCard cardClients;
     private MetricCard cardPlans;
     private MetricCard cardRevenue;
 
-    @Autowired
-    public DashboardPanel(ClientService clientService, PaymentService paymentService, PlanService planService) {
-        this.clientService  = clientService;
-        this.paymentService = paymentService;
-        this.planService    = planService;
-
+    public DashboardPanel() {
         initComponentsHandCoded();
-        loadDashboardData();
     }
 
     private void initComponentsHandCoded() {
         setOpaque(true);
         setBackground(Theme.BG_DARK);
-        // Row constraints: saludo (pref), KPIs (pref), tabla+lateral (grow), footer (pref)
         setLayout(new MigLayout("wrap 1, ins 20, fill", "[grow]", "[pref][pref][grow][pref]"));
 
         final MigLayout dashboardLayout = (MigLayout) getLayout();
@@ -90,7 +56,6 @@ public class DashboardPanel extends JPanel implements Scrollable {
         final JPanel topBar = new JPanel(topBarLayout);
         topBar.setOpaque(false);
 
-        // ── Bloque de Bienvenida ─────────────────────────────────────────────
         final JPanel welcomePanel = new JPanel(new MigLayout("wrap 1, ins 0, gapy 2"));
         welcomePanel.setOpaque(false);
 
@@ -106,7 +71,6 @@ public class DashboardPanel extends JPanel implements Scrollable {
         welcomePanel.add(lblSubtitle);
         topBar.add(welcomePanel, "left");
 
-        // ── Cápsula de Clima, Fecha y Perfil ─────────────────────────────────
         final JPanel weatherCapsule = new JPanel(new MigLayout("ins 4 12 4 12, aligny center, gapx 10")) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -198,13 +162,10 @@ public class DashboardPanel extends JPanel implements Scrollable {
         // =====================================================================
         // FILA 2: SECCIÓN DE MÉTRICAS KPI
         // =====================================================================
-        // kpiRowLayout — 3 columnas iguales de escritorio; ajustado por el listener
         final MigLayout kpiRowLayout = new MigLayout("ins 0, fill, gapx 16", "[grow][grow][grow]", "[pref]");
         final JPanel kpiRow = new JPanel(kpiRowLayout);
         kpiRow.setOpaque(false);
 
-        // [MEJORA JUNIOR] Inicializamos las tarjetas de métricas en el constructor.
-        // Los valores se actualizarán automáticamente cuando carguemos los datos.
         cardClients = new MetricCard(
                 "Clientes Activos",
                 "0",
@@ -245,7 +206,6 @@ public class DashboardPanel extends JPanel implements Scrollable {
         final JPanel splitGrid = new JPanel(splitGridLayout);
         splitGrid.setOpaque(false);
 
-        // ── 3a. Tabla Registro Reciente de Pagos ─────────────────────────────
         tableModel = new DefaultTableModel() {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -280,12 +240,9 @@ public class DashboardPanel extends JPanel implements Scrollable {
         tableCard.add(scrollPane, "grow");
         splitGrid.add(tableCard, "grow");
 
-        // ── 3b. Columna Derecha: Vencimientos + Actividad ─────────────────────
         final JPanel rightColumnPanel = new JPanel(new MigLayout("wrap 1, ins 0, gapy 16, fill", "[grow]", "[grow][grow]"));
         rightColumnPanel.setOpaque(false);
 
-        // [MEJORA JUNIOR] Instanciamos los paneles y los guardamos en las variables de clase.
-        // Así podremos inyectarles los datos reales luego.
         expirationsPanel = new UpcomingExpirationsPanel();
         activityPanel    = new RecentActivityPanel();
 
@@ -370,8 +327,6 @@ public class DashboardPanel extends JPanel implements Scrollable {
                 removeAll();
 
                 switch (targetMode) {
-
-                    // ── LARGE: Layout completo de escritorio ─────────────────
                     case LARGE: {
                         dashboardLayout.setLayoutConstraints("wrap 1, ins 20, fill");
                         dashboardLayout.setColumnConstraints("[grow]");
@@ -406,21 +361,17 @@ public class DashboardPanel extends JPanel implements Scrollable {
                         add(bottomActionsCard, "growx");
                         break;
                     }
-
-                    // ── MEDIUM: KPIs 2+1, splitGrid 55/45, footer horizontal ──
                     case MEDIUM: {
                         dashboardLayout.setLayoutConstraints("wrap 1, ins 16, fill");
                         dashboardLayout.setColumnConstraints("[grow]");
                         dashboardLayout.setRowConstraints("[pref][pref][pref][grow][pref]");
 
-                        // TopBar: bienvenida + cápsula apiladas
                         topBarLayout.setLayoutConstraints("wrap 1, ins 0, fillx, gapy 8");
                         topBarLayout.setColumnConstraints("[grow]");
                         topBar.removeAll();
                         topBar.add(welcomePanel,   "growx");
                         topBar.add(weatherCapsule, "alignx right");
 
-                        // KPIs: fila 1 = clientes + planes, fila 2 = recaudación centrada
                         kpiRowLayout.setLayoutConstraints("ins 0, fillx, gapx 12, gapy 12");
                         kpiRowLayout.setColumnConstraints("[grow][grow]");
                         kpiRow.removeAll();
@@ -428,7 +379,6 @@ public class DashboardPanel extends JPanel implements Scrollable {
                         kpiRow.add(cardPlans,   "grow");
                         kpiRow.add(cardRevenue, "grow, span 2");
 
-                        // SplitGrid sigue lado a lado pero proporciones 55/45
                         splitGridLayout.setLayoutConstraints("ins 0, fill");
                         splitGridLayout.setColumnConstraints("[55%, grow]12[45%, grow]");
                         splitGridLayout.setRowConstraints("[grow]");
@@ -436,7 +386,6 @@ public class DashboardPanel extends JPanel implements Scrollable {
                         splitGrid.add(tableCard,        "grow");
                         splitGrid.add(rightColumnPanel, "grow");
 
-                        // Footer 2 columnas + 1 centrada
                         bottomActionsCardLayout.setLayoutConstraints("ins 12 16 12 16, fillx, aligny center, gapx 8");
                         bottomActionsCardLayout.setColumnConstraints("[grow][grow][grow]");
 
@@ -446,21 +395,17 @@ public class DashboardPanel extends JPanel implements Scrollable {
                         add(bottomActionsCard, "growx");
                         break;
                     }
-
-                    // ── SMALL: Todo apilado verticalmente ────────────────────
                     case SMALL: {
                         dashboardLayout.setLayoutConstraints("wrap 1, ins 12, fillx, gapy 12");
                         dashboardLayout.setColumnConstraints("[grow, fill]");
                         dashboardLayout.setRowConstraints("");
 
-                        // TopBar apilado
                         topBarLayout.setLayoutConstraints("wrap 1, ins 0, fillx, gapy 6");
                         topBarLayout.setColumnConstraints("[grow]");
                         topBar.removeAll();
                         topBar.add(welcomePanel,   "growx");
                         topBar.add(weatherCapsule, "alignx right");
 
-                        // KPIs: apiladas verticalmente
                         kpiRowLayout.setLayoutConstraints("wrap 1, ins 0, fillx, gapy 10");
                         kpiRowLayout.setColumnConstraints("[grow, fill]");
                         kpiRow.removeAll();
@@ -468,7 +413,6 @@ public class DashboardPanel extends JPanel implements Scrollable {
                         kpiRow.add(cardPlans,   "growx");
                         kpiRow.add(cardRevenue, "growx");
 
-                        // SplitGrid apilado
                         splitGridLayout.setLayoutConstraints("wrap 1, ins 0, fillx, gapy 12");
                         splitGridLayout.setColumnConstraints("[grow, fill]");
                         splitGridLayout.setRowConstraints("");
@@ -476,7 +420,6 @@ public class DashboardPanel extends JPanel implements Scrollable {
                         splitGrid.add(tableCard,        "growx");
                         splitGrid.add(rightColumnPanel, "growx");
 
-                        // Footer apilado: botones uno debajo del otro
                         bottomActionsCardLayout.setLayoutConstraints("wrap 1, ins 10 14 10 14, fillx, gapy 8");
                         bottomActionsCardLayout.setColumnConstraints("[grow, fill]");
 
@@ -494,9 +437,35 @@ public class DashboardPanel extends JPanel implements Scrollable {
         });
     }
 
-    // =========================================================================
-    // IMPLEMENTACIÓN DE Scrollable
-    // =========================================================================
+    public void updateMetrics(String activeClients, String activePlans, String revenue) {
+        if (cardClients != null) cardClients.setValue(activeClients);
+        if (cardPlans != null) cardPlans.setValue(activePlans);
+        if (cardRevenue != null) cardRevenue.setValue(revenue);
+    }
+
+    public void updateRecentPaymentsTable(List<PaymentDTO> recentPayments) {
+        tableModel.setRowCount(0);
+        if (recentPayments != null) {
+            for (PaymentDTO dto : recentPayments) {
+                tableModel.addRow(new Object[]{
+                        dto.getNameClient(),
+                        dto.getNamePlan(),
+                        FormatterUtils.formatDate(dto.getPaymentDate()),
+                        FormatterUtils.formatCurrency(dto.getFinalAmount()),
+                        dto.getPaymentStatus()
+                });
+            }
+        }
+    }
+
+    public void updateUpcomingExpirations(List<Payment> pending) {
+        expirationsPanel.updateData(pending);
+    }
+
+    public void updateRecentActivity(List<Payment> recent) {
+        activityPanel.updateData(recent);
+    }
+
     @Override
     public Dimension getPreferredScrollableViewportSize() {
         return getPreferredSize();
@@ -514,21 +483,17 @@ public class DashboardPanel extends JPanel implements Scrollable {
 
     @Override
     public boolean getScrollableTracksViewportWidth() {
-        return true; // Sin scroll horizontal
+        return true;
     }
 
     @Override
     public boolean getScrollableTracksViewportHeight() {
-        // Expandir si el contenido cabe; hacer scroll si no
         if (getParent() instanceof JViewport) {
             return getPreferredSize().height <= ((JViewport) getParent()).getHeight();
         }
         return false;
     }
 
-    // =========================================================================
-    // ESTILO DE BOTONES DE ACCIÓN
-    // =========================================================================
     private void styleActionButton(JButton button) {
         button.setIconTextGap(10);
         button.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -542,387 +507,5 @@ public class DashboardPanel extends JPanel implements Scrollable {
                 "foreground: #f8fafc; " +
                 "hoverBackground: #1e293b; " +
                 "hoverForeground: #3b82f6;");
-    }
-
-    // [MEJORA JUNIOR] Se eliminaron SHORT_DATE_FORMATTER y formatMoneyValue
-    // delegando la conversión y formato visual a la nueva clase compartida FormatterUtils.
-    // =========================================================================
-    // CARGA DE DATOS
-    // =========================================================================
-    private void loadDashboardData() {
-        // [MEJORA JUNIOR] Cada vez que cargamos los datos del Dashboard,
-        // recalculamos las métricas principales de la base de datos y actualizamos los componentes.
-        long activeClients = clientService.findByIsActive(true).size();
-        if (cardClients != null) {
-            cardClients.setValue(String.valueOf(activeClients));
-        }
-
-        long activePlans = planService.findByIsActiveDTO(true).size();
-        if (cardPlans != null) {
-            cardPlans.setValue(String.valueOf(activePlans));
-        }
-
-        List<Payment> allPayments = paymentService.findAll();
-        BigDecimal totalRevenue = allPayments.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.CONFIRMADO)
-                .map(Payment::getFinalAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (cardRevenue != null) {
-            cardRevenue.setValue(FormatterUtils.formatCurrency(totalRevenue));
-        }
-
-        List<PaymentDTO> payments = paymentService.getAllPaymentsDTO();
-
-        List<PaymentDTO> recent = payments.stream()
-                .sorted((p1, p2) -> {
-                    Long id1 = p1.getIdPayment();
-                    Long id2 = p2.getIdPayment();
-                    if (id1 == null && id2 == null) return 0;
-                    if (id1 == null) return 1;
-                    if (id2 == null) return -1;
-                    return Long.compare(id2, id1);
-                })
-                .limit(4)
-                .collect(Collectors.toList());
-
-        tableModel.setRowCount(0);
-        for (PaymentDTO dto : recent) {
-            tableModel.addRow(new Object[]{
-                    dto.getNameClient(),
-                    dto.getNamePlan(),
-                    FormatterUtils.formatDate(dto.getPaymentDate()),
-                    FormatterUtils.formatCurrency(dto.getFinalAmount()),
-                    dto.getPaymentStatus()
-            });
-        }
-
-        // [MEJORA JUNIOR] Filtramos pagos PENDIENTES o VENCIDOS, los ordenamos por fecha
-        // y tomamos los primeros 3 para el panel de "Próximos Vencimientos".
-        List<Payment> pending = paymentService.findAll().stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.PENDIENTE || p.getPaymentStatus() == PaymentStatus.VENCIDO)
-                .sorted(java.util.Comparator.comparing(Payment::getPeriod))
-                .limit(3)
-                .collect(Collectors.toList());
-        expirationsPanel.updateData(pending);
-
-        // [MEJORA JUNIOR] Ordenamos todos los pagos del más reciente al más antiguo
-        // usando el ID y tomamos los últimos 4 para el panel de "Actividad Reciente".
-        List<Payment> recentPays = paymentService.findAll().stream()
-                .sorted((p1, p2) -> p2.getId().compareTo(p1.getId()))
-                .limit(4)
-                .collect(Collectors.toList());
-        activityPanel.updateData(recentPays);
-    }
-
-    // [MEJORA JUNIOR] Método público para refrescar todo el Dashboard desde componentes externos (como MainFrame).
-    public void refreshData() {
-        loadDashboardData();
-    }
-
-    // =========================================================================
-    // PANEL: PRÓXIMOS VENCIMIENTOS
-    // =========================================================================
-    // [MEJORA JUNIOR] Le quitamos "static" para que pueda acceder a los métodos
-    // e instancias de la clase principal, y creamos un método para actualizar los datos.
-    private class UpcomingExpirationsPanel extends JPanel {
-
-        private JPanel listPanel;
-
-        public UpcomingExpirationsPanel() {
-            setOpaque(false);
-            initComponents();
-        }
-
-        private void initComponents() {
-            setLayout(new MigLayout("wrap 1, ins 18 20 18 20, fill", "[grow]", "[]10[grow]"));
-
-            JPanel headerPanel = new JPanel(new MigLayout("ins 0, fillx", "[grow]push[]"));
-            headerPanel.setOpaque(false);
-
-            JLabel lblHeader = new JLabel("Próximos Vencimientos");
-            lblHeader.setFont(Theme.FONT_SECTION_TITLE);
-            lblHeader.setForeground(Theme.TEXT_ACTIVE);
-            headerPanel.add(lblHeader, "left");
-
-            JLabel lblLink = new JLabel("Ver todos");
-            lblLink.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-            lblLink.setForeground(Theme.TEXT_INACTIVE);
-            lblLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            headerPanel.add(lblLink, "right");
-
-            add(headerPanel, "cell 0 0, growx");
-
-            listPanel = new JPanel(new MigLayout("wrap 1, ins 0, gapy 8, fillx"));
-            listPanel.setOpaque(false);
-            add(listPanel, "cell 0 1, grow");
-        }
-
-        // [MEJORA JUNIOR] Método que limpia la lista y construye dinámicamente los items.
-        public void updateData(List<Payment> pendingPayments) {
-            listPanel.removeAll();
-            if (pendingPayments.isEmpty()) {
-                JLabel emptyLabel = new JLabel("No hay pagos pendientes");
-                emptyLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                emptyLabel.setForeground(Theme.TEXT_INACTIVE);
-                listPanel.add(emptyLabel, "align center");
-            } else {
-                for (Payment p : pendingPayments) {
-                    com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client c = p.getClient();
-                    String name = c.getName() + " " + c.getLastName();
-                    String plan = c.getCurrentPlan() != null ? c.getCurrentPlan().getNamePlan() : "Sin Plan";
-                    
-                    String initials = "";
-                    if (!name.trim().isEmpty()) {
-                        String[] parts = name.trim().split("\\s+");
-                        if (parts.length >= 2) {
-                            initials = ("" + parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
-                        } else if (parts[0].length() >= 2) {
-                            initials = parts[0].substring(0, 2).toUpperCase();
-                        } else {
-                            initials = parts[0].toUpperCase();
-                        }
-                    }
-                    
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
-                    String alertText = "Vence: " + p.getPeriod().format(formatter);
-                    Color alertColor = Color.decode("#f59e0b");
-                    Color badgeBg = new Color(245, 158, 11, 30);
-                    
-                    if (p.getPaymentStatus() == PaymentStatus.VENCIDO) {
-                        alertText = "VENCIDO";
-                        alertColor = Color.decode("#ef4444");
-                        badgeBg = new Color(239, 68, 68, 30);
-                    }
-                    
-                    listPanel.add(new ExpirationItem(name, plan, alertText, initials, badgeBg, alertColor), "growx");
-                }
-            }
-            listPanel.revalidate();
-            listPanel.repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2d = (Graphics2D) g.create();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setColor(Theme.CARD_BG);
-            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), Theme.ARC_CARD, Theme.ARC_CARD);
-            g2d.setColor(Theme.BORDER_SLATE);
-            g2d.setStroke(new BasicStroke(1.2f));
-            g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, Theme.ARC_CARD, Theme.ARC_CARD);
-            g2d.dispose();
-        }
-    }
-
-    // =========================================================================
-    // ITEM: FILA DE VENCIMIENTO
-    // =========================================================================
-    private static class ExpirationItem extends JPanel {
-
-        public ExpirationItem(String name, String planName, String alertText,
-                              String initials, Color badgeBgColor, Color alertTextColor) {
-            setOpaque(false);
-            setLayout(new MigLayout("ins 8 10 8 10, fill", "[32px!]10[grow][pref]", "[grow]"));
-
-            JPanel badge = new JPanel(new MigLayout("ins 0, align center, fill")) {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    super.paintComponent(g);
-                    Graphics2D g2d = (Graphics2D) g.create();
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
-                    g2d.setColor(badgeBgColor);
-                    g2d.fillOval(0, 0, getWidth(), getHeight());
-                    g2d.setColor(Color.WHITE);
-                    g2d.setFont(new Font("Segoe UI", Font.BOLD, 11));
-                    FontMetrics fm = g2d.getFontMetrics();
-                    int tx = (getWidth()  - fm.stringWidth(initials)) / 2;
-                    int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
-                    g2d.drawString(initials, tx, ty);
-                    g2d.dispose();
-                }
-            };
-            badge.setPreferredSize(new Dimension(32, 32));
-            badge.setOpaque(false);
-
-            JPanel textPanel = new JPanel(new MigLayout("wrap 1, ins 0, gapy 0"));
-            textPanel.setOpaque(false);
-            JLabel lblName = new JLabel(name);
-            lblName.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            lblName.setForeground(Theme.TEXT_ACTIVE);
-            JLabel lblPlan = new JLabel(planName);
-            lblPlan.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-            lblPlan.setForeground(Theme.TEXT_INACTIVE);
-            textPanel.add(lblName);
-            textPanel.add(lblPlan);
-
-            JLabel lblAlert = new JLabel(alertText);
-            lblAlert.setFont(new Font("Segoe UI", Font.BOLD, 10));
-            lblAlert.setForeground(alertTextColor);
-
-            add(badge,     "cell 0 0, aligny center");
-            add(textPanel, "cell 1 0, aligny center");
-            add(lblAlert,  "cell 2 0, aligny center");
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2d = (Graphics2D) g.create();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setColor(Theme.CARD_BG_ALT);
-            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-            g2d.setColor(Theme.BORDER_SLATE);
-            g2d.setStroke(new BasicStroke(1.0f));
-            g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
-            g2d.dispose();
-        }
-    }
-
-    // =========================================================================
-    // PANEL: ACTIVIDAD RECIENTE
-    // =========================================================================
-    // [MEJORA JUNIOR] Igual que el panel anterior, lo hacemos no estático para
-    // poder poblarlo dinámicamente con información real desde la base de datos.
-    private class RecentActivityPanel extends JPanel {
-
-        private JPanel listPanel;
-
-        public RecentActivityPanel() {
-            setOpaque(false);
-            initComponents();
-        }
-
-        private void initComponents() {
-            setLayout(new MigLayout("wrap 1, ins 18 20 18 20, fill", "[grow]", "[]10[grow]"));
-
-            JPanel headerPanel = new JPanel(new MigLayout("ins 0, fillx", "[grow]push[]"));
-            headerPanel.setOpaque(false);
-
-            JLabel lblHeader = new JLabel("Actividad Reciente");
-            lblHeader.setFont(Theme.FONT_SECTION_TITLE);
-            lblHeader.setForeground(Theme.TEXT_ACTIVE);
-            headerPanel.add(lblHeader, "left");
-
-            JLabel lblLink = new JLabel("Ver todo");
-            lblLink.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-            lblLink.setForeground(Theme.TEXT_INACTIVE);
-            lblLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            headerPanel.add(lblLink, "right");
-
-            add(headerPanel, "cell 0 0, growx");
-
-            listPanel = new JPanel(new MigLayout("wrap 1, ins 0, gapy 8, fillx"));
-            listPanel.setOpaque(false);
-            add(listPanel, "cell 0 1, grow");
-        }
-
-        // [MEJORA JUNIOR] Actualizamos la actividad reciente con los últimos pagos reales.
-        public void updateData(List<Payment> recentPayments) {
-            listPanel.removeAll();
-            if (recentPayments.isEmpty()) {
-                JLabel emptyLabel = new JLabel("Sin actividad reciente");
-                emptyLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                emptyLabel.setForeground(Theme.TEXT_INACTIVE);
-                listPanel.add(emptyLabel, "align center");
-            } else {
-                for (Payment p : recentPayments) {
-                    com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client c = p.getClient();
-                    String name = c.getName() + " " + c.getLastName();
-                    String text = name + " pagó " + (c.getCurrentPlan() != null ? c.getCurrentPlan().getNamePlan() : "membresía");
-                    
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                    String timeText = "Fecha: " + p.getPaymentDate().format(formatter);
-                    
-                    Color iconColor = Color.decode("#10b981");
-                    Color badgeBg = new Color(16, 185, 129, 30);
-                    String iconType = "check";
-                    
-                    if (p.getPaymentStatus() == PaymentStatus.PENDIENTE) {
-                        text = name + " tiene un pago pendiente";
-                        iconColor = Color.decode("#f59e0b");
-                        badgeBg = new Color(245, 158, 11, 30);
-                        iconType = "credit-card";
-                    }
-                    
-                    listPanel.add(new ActivityItem(text, timeText, iconType, badgeBg, iconColor), "growx");
-                }
-            }
-            listPanel.revalidate();
-            listPanel.repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2d = (Graphics2D) g.create();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setColor(Theme.CARD_BG);
-            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), Theme.ARC_CARD, Theme.ARC_CARD);
-            g2d.setColor(Theme.BORDER_SLATE);
-            g2d.setStroke(new BasicStroke(1.2f));
-            g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, Theme.ARC_CARD, Theme.ARC_CARD);
-            g2d.dispose();
-        }
-    }
-
-    // =========================================================================
-    // ITEM: FILA DE ACTIVIDAD
-    // =========================================================================
-    private static class ActivityItem extends JPanel {
-
-        public ActivityItem(String text, String timeText, String iconType,
-                            Color badgeBgColor, Color iconColor) {
-            setOpaque(false);
-            setLayout(new MigLayout("ins 8 10 8 10, fill", "[32px!]10[grow]", "[grow]"));
-
-            JPanel badge = new JPanel(new MigLayout("ins 0, align center, fill")) {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    super.paintComponent(g);
-                    Graphics2D g2d = (Graphics2D) g.create();
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2d.setColor(badgeBgColor);
-                    g2d.fillOval(0, 0, getWidth(), getHeight());
-                    g2d.dispose();
-                }
-            };
-            badge.setPreferredSize(new Dimension(32, 32));
-            badge.setOpaque(false);
-
-            JLabel lblIcon = new JLabel(new VectorIcon(iconType, 14, iconColor));
-            badge.add(lblIcon, "align center");
-            add(badge, "cell 0 0, aligny center");
-
-            JPanel textPanel = new JPanel(new MigLayout("wrap 1, ins 0, gapy 0"));
-            textPanel.setOpaque(false);
-
-            JLabel lblText = new JLabel(text);
-            lblText.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            lblText.setForeground(Theme.TEXT_ACTIVE);
-
-            JLabel lblTime = new JLabel(timeText);
-            lblTime.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-            lblTime.setForeground(Theme.TEXT_INACTIVE);
-
-            textPanel.add(lblText);
-            textPanel.add(lblTime);
-            add(textPanel, "cell 1 0, aligny center, growx");
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2d = (Graphics2D) g.create();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setColor(Theme.CARD_BG_ALT);
-            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-            g2d.setColor(Theme.BORDER_SLATE);
-            g2d.setStroke(new BasicStroke(1.0f));
-            g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
-            g2d.dispose();
-        }
     }
 }

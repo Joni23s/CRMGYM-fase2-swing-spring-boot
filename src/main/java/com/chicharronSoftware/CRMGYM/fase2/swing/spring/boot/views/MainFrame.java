@@ -122,10 +122,6 @@ public class MainFrame extends JFrame {
      * Desacopla todo el pintado directo de KPIs y Gráficos hacia DashboardPanel.
      */
     public void showDashboard(DashboardPanel dashboardPanel) {
-        // [MEJORA JUNIOR] Invocamos al método de refresco para que recalcule
-        // todas las métricas de socios y caja antes de pintar la pantalla principal.
-        dashboardPanel.refreshData();
-
         // 1. Limpiar el contenedor central donde se montan las vistas
         centerArea.removeAll();
 

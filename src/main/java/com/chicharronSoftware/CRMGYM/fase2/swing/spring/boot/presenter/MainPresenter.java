@@ -30,11 +30,13 @@ public class MainPresenter {
     private final PaymentPanel paymentPanel;
     private final HistoricalPanel historicalPanel;
     private final ClientService clientService;
+    private final DashboardPresenter dashboardPresenter;
 
     @Autowired
     public MainPresenter(MainFrame mainFrame, SidebarPanel sidebarPanel, StatusBarPanel statusBarPanel,
             DashboardPanel dashboardPanel, PlansPanel plansPanel, ClientPanel clientPanel,
-            PaymentPanel paymentPanel, HistoricalPanel historicalPanel, ClientService clientService) {
+            PaymentPanel paymentPanel, HistoricalPanel historicalPanel, ClientService clientService,
+            DashboardPresenter dashboardPresenter) {
         this.mainFrame = mainFrame;
         this.sidebarPanel = sidebarPanel;
         this.statusBarPanel = statusBarPanel;
@@ -44,6 +46,7 @@ public class MainPresenter {
         this.paymentPanel = paymentPanel;
         this.historicalPanel = historicalPanel;
         this.clientService = clientService;
+        this.dashboardPresenter = dashboardPresenter;
     }
 
     @PostConstruct
@@ -69,6 +72,7 @@ public class MainPresenter {
         sidebarPanel.setActiveButtonByText(panelName);
         switch (panelName) {
             case "Inicio":
+                dashboardPresenter.refreshData();
                 mainFrame.showDashboard(dashboardPanel);
                 break;
             case "Socios":
