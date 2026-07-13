@@ -21,7 +21,8 @@ import org.slf4j.LoggerFactory;
 @SpringBootApplication
 public class Application {
 
-	// [MEJORA JUNIOR] Creamos un Logger para poder registrar los errores inesperados
+	// [MEJORA JUNIOR] Creamos un Logger para poder registrar los errores
+	// inesperados
 	// en la consola o archivo de log de forma estructurada.
 	private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
@@ -31,10 +32,10 @@ public class Application {
 		// en la interfaz gráfica (EDT de Swing), evitando que la app falle en silencio.
 		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
 			logger.error("Error no controlado en el hilo {}: {}", thread.getName(), throwable.getMessage(), throwable);
-			JOptionPane.showMessageDialog(null, 
-				"Ocurrió un error inesperado:\n" + throwable.getMessage(), 
-				"Error Interno", 
-				JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null,
+					"Ocurrió un error inesperado:\n" + throwable.getMessage(),
+					"Error Interno",
+					JOptionPane.ERROR_MESSAGE);
 		});
 
 		try {

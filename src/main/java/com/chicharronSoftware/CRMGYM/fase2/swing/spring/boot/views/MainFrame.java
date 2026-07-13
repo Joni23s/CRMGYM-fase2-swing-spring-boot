@@ -76,6 +76,7 @@ public class MainFrame extends JFrame {
     private final PlanValidation planValidation;
     private final ClientValidation clientValidation;
     private final ButtonFactory buttonFactory; // [MEJORA JUNIOR] Fábrica inyectada para pasar a paneles
+    private final PlansPanel plansPanel;
 
     // Inyección del panel modular de Dashboard centralizado por Spring Boot
     private final DashboardPanel dashboardPanel;
@@ -86,7 +87,8 @@ public class MainFrame extends JFrame {
     @Autowired
     public MainFrame(DashboardPanel dashboardPanel, ClientService clientService, PlanService planService,
             HistoricalPlanService historicalPlanService, PaymentService paymentService,
-            PlanValidation planValidation, ClientValidation clientValidation, ButtonFactory buttonFactory) {
+            PlanValidation planValidation, ClientValidation clientValidation, ButtonFactory buttonFactory,
+            PlansPanel plansPanel) {
         this.dashboardPanel = dashboardPanel;
         this.clientService = clientService;
         this.planService = planService;
@@ -95,6 +97,7 @@ public class MainFrame extends JFrame {
         this.planValidation = planValidation;
         this.clientValidation = clientValidation;
         this.buttonFactory = buttonFactory;
+        this.plansPanel = plansPanel;
 
         initComponents();
     }
@@ -132,7 +135,7 @@ public class MainFrame extends JFrame {
         sidebarPanel.addNavigationListener("Socios",
                 e -> showPanel(new ClientPanel(clientService, planService, clientValidation, buttonFactory)));
         sidebarPanel.addNavigationListener("Planes",
-                e -> showPanel(new PlansPanel(planService, planValidation, clientService, buttonFactory)));
+                e -> showPanel(this.plansPanel));
         sidebarPanel.addNavigationListener("Pagos",
                 e -> showPanel(new PaymentPanel(paymentService, clientService, buttonFactory)));
         sidebarPanel.addNavigationListener("Historial",
@@ -196,7 +199,4 @@ public class MainFrame extends JFrame {
         sidebarPanel.setActiveButtonByText("Pagos");
         showPanel(new PaymentPanel(paymentService, clientService, buttonFactory));
     }
-
-    // [MEJORA JUNIOR] Se eliminó el método 'formatCurrency' ya que no se estaba
-    // utilizando en esta clase (código muerto).
 }
