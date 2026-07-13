@@ -77,6 +77,7 @@ public class MainFrame extends JFrame {
     private final ClientValidation clientValidation;
     private final ButtonFactory buttonFactory; // [MEJORA JUNIOR] Fábrica inyectada para pasar a paneles
     private final PlansPanel plansPanel;
+    private final ClientPanel clientPanel;
 
     // Inyección del panel modular de Dashboard centralizado por Spring Boot
     private final DashboardPanel dashboardPanel;
@@ -88,7 +89,7 @@ public class MainFrame extends JFrame {
     public MainFrame(DashboardPanel dashboardPanel, ClientService clientService, PlanService planService,
             HistoricalPlanService historicalPlanService, PaymentService paymentService,
             PlanValidation planValidation, ClientValidation clientValidation, ButtonFactory buttonFactory,
-            PlansPanel plansPanel) {
+            PlansPanel plansPanel, ClientPanel clientPanel) {
         this.dashboardPanel = dashboardPanel;
         this.clientService = clientService;
         this.planService = planService;
@@ -98,6 +99,7 @@ public class MainFrame extends JFrame {
         this.clientValidation = clientValidation;
         this.buttonFactory = buttonFactory;
         this.plansPanel = plansPanel;
+        this.clientPanel = clientPanel;
 
         initComponents();
     }
@@ -133,7 +135,7 @@ public class MainFrame extends JFrame {
         // --- Mapeo de Eventos de Navegación del Sidebar ---
         sidebarPanel.addNavigationListener("Inicio", e -> showDashboardHome());
         sidebarPanel.addNavigationListener("Socios",
-                e -> showPanel(new ClientPanel(clientService, planService, clientValidation, buttonFactory)));
+                e -> showPanel(this.clientPanel));
         sidebarPanel.addNavigationListener("Planes",
                 e -> showPanel(this.plansPanel));
         sidebarPanel.addNavigationListener("Pagos",
@@ -187,7 +189,7 @@ public class MainFrame extends JFrame {
     // Métodos auxiliares para la navegación interactiva desde otros paneles
     public void selectClientsPanel() {
         sidebarPanel.setActiveButtonByText("Socios");
-        showPanel(new ClientPanel(clientService, planService, clientValidation, buttonFactory));
+        showPanel(this.clientPanel);
     }
 
     public void selectHistoryPanel() {
