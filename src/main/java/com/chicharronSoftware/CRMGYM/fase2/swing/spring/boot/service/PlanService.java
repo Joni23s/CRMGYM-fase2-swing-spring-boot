@@ -1,11 +1,12 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PlanDTO;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.event.PlanDeactivatedEvent;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PlanMapper;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Plan;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PlanRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +21,7 @@ import java.util.stream.Collectors;
 public class PlanService {
 
     private final PlanRepository planRepository;
-    private final ClientService clientService;
-    private final HistoricalPlanService historicalPlanService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public Optional<Plan> findByNamePlanIgnoreCase(String name) {
         return planRepository.findByNamePlanIgnoreCase(name);
@@ -46,15 +46,11 @@ public class PlanService {
     public void changeStatusWithClients(Integer id, boolean status) {
         planRepository.findById(id).ifPresent(plan -> {
             if (!status) {
-                List<Client> clients = clientService.findByCurrentPlan(plan.getNamePlan());
-                Optional<Plan> noPlanOpt = findByNamePlanIgnoreCase("Sin Plan");
-                clients.forEach(client -> {
-                    historicalPlanService.closeCurrentPlan(client);
-                    noPlanOpt.ifPresent(noPlan -> {
-                        client.setCurrentPlan(noPlan);
-                        clientService.save(client);
-                    });
-                });
+                // [MEJORA JUNIOR] Flujo desacoplado:
+                // En lugar de inyectar ClientService y modificar los socios aquí de forma síncrona,
+                // disparamos un evento a la aplicación de Spring. Esto permite separar las responsabilidades
+                // entre el módulo de Planes y el de Clientes, facilitando el mantenimiento.
+                eventPublisher.publishEvent(new PlanDeactivatedEvent(this, plan.getNamePlan()));
             }
             plan.setIsActive(status);
             planRepository.save(plan);

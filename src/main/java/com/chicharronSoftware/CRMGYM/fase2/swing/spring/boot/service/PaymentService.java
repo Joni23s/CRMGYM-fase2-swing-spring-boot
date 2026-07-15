@@ -18,6 +18,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * [MEJORA JUNIOR] Servicio para administrar los pagos de las membresías de los socios.
+ * Permite registrar cobros, buscar transacciones anteriores y verificar vencimientos de cuotas.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -49,6 +53,8 @@ public class PaymentService {
 
     // --- DTO Helpers ---
     public List<PaymentDTO> getAllPaymentsDTO() {
+        // [MEJORA JUNIOR] Retornamos la lista mapeada a DTO para evitar exponer
+        // entidades persistidas a la capa visual de Swing.
         return paymentRepository.findAll()
                 .stream()
                 .map(PaymentMapper::toDTO)
@@ -65,14 +71,17 @@ public class PaymentService {
     }
 
     /**
-     * Marca un pago como vencido si ya pasó la fecha límite.
+     * [MEJORA JUNIOR] Proceso programado para marcar pagos vencidos.
+     * Marca un pago como vencido si ya pasó la fecha límite de pago de su período.
+     * 
+     * @param today Fecha actual de referencia para evaluar los vencimientos.
      */
     public void markOverduePayments(LocalDate today) {
         // [MEJORA JUNIOR] En lugar de obtener todos los pagos pendientes y recorrerlos
         // en un bucle for() (lo que genera una consulta SELECT y múltiples UPDATE por
         // cada pago),
         // llamamos a la query masiva que actualiza todo directamente en la base de
-        // datos de una vez.
+        // datos de una vez (Bulk Update). Esto reduce el tráfico de red e I/O en BD.
         paymentRepository.markOverduePaymentsBulk(today);
     }
 }
