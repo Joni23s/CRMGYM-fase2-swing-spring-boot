@@ -25,6 +25,7 @@ public class ClientService {
 
     private final ClientRepository clientRepository;
     private final HistoricalPlanService historicalPlanService;
+    private final com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PlanRepository planRepository;
 
     /**
      * [MEJORA JUNIOR] Obtiene la lista completa de socios mapeada a DTOs.
@@ -58,6 +59,27 @@ public class ClientService {
                 .stream()
                 .map(ClientMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * [MEJORA JUNIOR] Sobrecarga de guardado que acepta un DTO de la UI.
+     * Convierte el DTO a entidad de dominio y delega al guardado principal.
+     */
+    public void save(ClientDTO clientDTO) {
+        Plan plan = planRepository.findByNamePlanIgnoreCase(clientDTO.getNamePlan())
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró el plan especificado: " + clientDTO.getNamePlan()));
+
+        Client client = Client.builder()
+                .documentId(clientDTO.getDocumentId())
+                .name(clientDTO.getName())
+                .lastName(clientDTO.getLastName())
+                .email(clientDTO.getEmail())
+                .phoneNumber(clientDTO.getPhoneNumber())
+                .isActive("Activo".equalsIgnoreCase(clientDTO.getStatus()))
+                .currentPlan(plan)
+                .build();
+
+        save(client);
     }
 
     /**
@@ -104,5 +126,15 @@ public class ClientService {
 
     public List<Client> findByCurrentPlan(String namePlan) {
         return clientRepository.findByCurrentPlan_NamePlan(namePlan);
+    }
+
+    /**
+     * [MEJORA JUNIOR] Actualiza el estado de activación de un socio por su DNI.
+     */
+    public void changeStatus(Integer documentId, boolean status) {
+        clientRepository.findById(documentId).ifPresent(client -> {
+            client.setIsActive(status);
+            clientRepository.save(client);
+        });
     }
 }

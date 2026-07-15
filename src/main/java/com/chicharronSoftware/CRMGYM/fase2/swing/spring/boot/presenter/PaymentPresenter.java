@@ -126,42 +126,28 @@ public class PaymentPresenter {
                     .findFirst()
                     .orElse(PaymentStatus.PENDIENTE);
 
+            PaymentDTO paymentDto = PaymentDTO.builder()
+                    .idPayment(view.isEditMode() ? view.getEditingPaymentId() : null)
+                    .period(period)
+                    .paymentDate(payment)
+                    .baseAmount(baseAmountVal)
+                    .discountApplied(discountVal)
+                    .finalAmount(finalAmount)
+                    .paymentMethod(paymentMethod.name())
+                    .paymentStatus(paymentStatus.name())
+                    .documentId(dni)
+                    .build();
+
+            view.getBtnSave().setEnabled(false);
+
             AsyncDataLoader.loadData(
                 () -> {
-                    Client client = clientService.findById(dni)
-                            .orElseThrow(() -> new IllegalArgumentException("No se encontró un cliente con DNI " + dni));
-
-                    Payment paymentEntity;
-                    if (view.isEditMode() && view.getEditingPaymentId() != null) {
-                        paymentEntity = paymentService.findById(view.getEditingPaymentId())
-                                .orElseThrow(() -> new IllegalArgumentException("No se encontró el pago a modificar."));
-                        paymentEntity.setPeriod(period);
-                        paymentEntity.setPaymentDate(payment);
-                        paymentEntity.setBaseAmount(baseAmountVal);
-                        paymentEntity.setDiscountApplied(discountVal);
-                        paymentEntity.setFinalAmount(finalAmount);
-                        paymentEntity.setPaymentMethod(paymentMethod);
-                        paymentEntity.setPaymentStatus(paymentStatus);
-                        paymentEntity.setClient(client);
-                    } else {
-                        paymentEntity = Payment.builder()
-                                .period(period)
-                                .paymentDate(payment)
-                                .baseAmount(baseAmountVal)
-                                .discountApplied(discountVal)
-                                .finalAmount(finalAmount)
-                                .paymentMethod(paymentMethod)
-                                .paymentStatus(paymentStatus)
-                                .client(client)
-                                .build();
-                    }
-
-                    paymentService.save(paymentEntity);
-                    return paymentEntity;
+                    paymentService.save(paymentDto);
+                    return paymentDto;
                 },
-                new AsyncDataLoader.DataLoadCallback<Payment>() {
+                new AsyncDataLoader.DataLoadCallback<PaymentDTO>() {
                     @Override
-                    public void onSuccess(Payment result) {
+                    public void onSuccess(PaymentDTO result) {
                         view.getBtnSave().setEnabled(true);
                         String msg = view.isEditMode() ? "Pago actualizado correctamente." : "Pago guardado correctamente.";
                         view.showSuccess(msg, "Éxito");

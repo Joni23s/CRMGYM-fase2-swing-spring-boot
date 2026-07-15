@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.ClientRepository clientRepository;
 
     // --- 🔹 CRUD básico ---
     public List<Payment> findAll() {
@@ -40,6 +41,41 @@ public class PaymentService {
 
     public Payment save(Payment payment) {
         return paymentRepository.save(payment);
+    }
+
+    /**
+     * [MEJORA JUNIOR] Sobrecarga de guardado que acepta un DTO de pago.
+     * Resuelve el cliente asociado mediante su DNI y convierte el DTO a entidad de dominio.
+     */
+    public void save(PaymentDTO paymentDTO) {
+        Client client = clientRepository.findById(paymentDTO.getDocumentId())
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró un cliente con DNI " + paymentDTO.getDocumentId()));
+
+        Payment payment;
+        if (paymentDTO.getIdPayment() != null) {
+            payment = paymentRepository.findById(paymentDTO.getIdPayment())
+                    .orElseThrow(() -> new IllegalArgumentException("No se encontró el pago a modificar."));
+            payment.setPeriod(paymentDTO.getPeriod());
+            payment.setPaymentDate(paymentDTO.getPaymentDate());
+            payment.setBaseAmount(paymentDTO.getBaseAmount());
+            payment.setDiscountApplied(paymentDTO.getDiscountApplied());
+            payment.setFinalAmount(paymentDTO.getFinalAmount());
+            payment.setPaymentMethod(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod.valueOf(paymentDTO.getPaymentMethod()));
+            payment.setPaymentStatus(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus.valueOf(paymentDTO.getPaymentStatus()));
+            payment.setClient(client);
+        } else {
+            payment = Payment.builder()
+                    .period(paymentDTO.getPeriod())
+                    .paymentDate(paymentDTO.getPaymentDate())
+                    .baseAmount(paymentDTO.getBaseAmount())
+                    .discountApplied(paymentDTO.getDiscountApplied())
+                    .finalAmount(paymentDTO.getFinalAmount())
+                    .paymentMethod(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod.valueOf(paymentDTO.getPaymentMethod()))
+                    .paymentStatus(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus.valueOf(paymentDTO.getPaymentStatus()))
+                    .client(client)
+                    .build();
+        }
+        paymentRepository.save(payment);
     }
 
     // --- Consultas comunes ---

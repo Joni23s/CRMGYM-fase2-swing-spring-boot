@@ -66,23 +66,26 @@ public class PlansPresenter {
             Integer selectedHours = (Integer) view.getSpinnerHours().getValue();
             Integer selectedDays = (Integer) view.getSpinnerDays().getValue();
 
-            final Plan plan;
-            if (view.isEditMode()) {
-                plan = new Plan(view.getEditingPlanId(), name, selectedDays, selectedHours, cost, notes, true);
-            } else {
-                plan = new Plan(name, selectedDays, selectedHours, cost, notes, true);
-            }
+            final PlanDTO planDto = PlanDTO.builder()
+                    .idPlan(view.isEditMode() ? view.getEditingPlanId() : null)
+                    .namePlan(name)
+                    .daysEnabled(selectedDays)
+                    .hoursEnabled(selectedHours)
+                    .value(cost)
+                    .notes(notes)
+                    .status("Activo")
+                    .build();
 
             view.getBtnSave().setEnabled(false);
 
             com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
                 () -> {
-                    planService.save(plan);
-                    return plan;
+                    planService.save(planDto);
+                    return planDto;
                 },
-                new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<Plan>() {
+                new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<PlanDTO>() {
                     @Override
-                    public void onSuccess(Plan savedPlan) {
+                    public void onSuccess(PlanDTO savedPlan) {
                         view.getBtnSave().setEnabled(true);
                         String msg = view.isEditMode() ? "Plan actualizado correctamente." : "Plan guardado correctamente.";
                         view.showSuccess(msg, "Éxito");

@@ -43,6 +43,7 @@ public class PlanService {
         return planRepository.findByValue(cost);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "activePlans", allEntries = true)
     public void changeStatusWithClients(Integer id, boolean status) {
         planRepository.findById(id).ifPresent(plan -> {
             if (!status) {
@@ -64,6 +65,7 @@ public class PlanService {
                 .collect(Collectors.toList());
     }
 
+    @org.springframework.cache.annotation.Cacheable(value = "activePlans", key = "#isActive")
     public List<PlanDTO> findByIsActiveDTO(boolean isActive) {
         return planRepository.findByIsActive(isActive)
                 .stream()
@@ -71,7 +73,11 @@ public class PlanService {
                 .collect(Collectors.toList());
     }
 
-    public void save(Plan plan) {
+    @org.springframework.cache.annotation.CacheEvict(value = "activePlans", allEntries = true)
+    public void save(PlanDTO planDTO) {
+        // [MEJORA JUNIOR] Retiramos la instanciación de entidades de la UI. El presentador pasa un DTO
+        // y el servicio se encarga de convertirlo a entidad JPA utilizando el Mapper antes de persistir.
+        Plan plan = PlanMapper.toEntity(planDTO);
         planRepository.save(plan);
     }
 }
