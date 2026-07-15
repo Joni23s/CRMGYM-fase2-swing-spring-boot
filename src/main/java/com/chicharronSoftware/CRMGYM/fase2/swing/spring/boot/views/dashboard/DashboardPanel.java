@@ -435,11 +435,11 @@ public class DashboardPanel extends JPanel implements Scrollable {
         }
     }
 
-    public void updateUpcomingExpirations(List<Payment> pending) {
+    public void updateUpcomingExpirations(List<PaymentDTO> pending) {
         expirationsPanel.updateData(pending);
     }
 
-    public void updateRecentActivity(List<Payment> recent) {
+    public void updateRecentActivity(List<PaymentDTO> recent) {
         activityPanel.updateData(recent);
     }
 

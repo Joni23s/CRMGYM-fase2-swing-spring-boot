@@ -1,7 +1,6 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.dashboard;
 
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Payment;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.VectorIcon;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
@@ -45,7 +44,7 @@ public class RecentActivityPanel extends JPanel {
         add(listPanel, "cell 0 1, grow");
     }
 
-    public void updateData(List<Payment> recentPayments) {
+    public void updateData(List<PaymentDTO> recentPayments) {
         listPanel.removeAll();
         if (recentPayments == null || recentPayments.isEmpty()) {
             JLabel emptyLabel = new JLabel("Sin actividad reciente");
@@ -53,10 +52,9 @@ public class RecentActivityPanel extends JPanel {
             emptyLabel.setForeground(Theme.TEXT_INACTIVE);
             listPanel.add(emptyLabel, "align center");
         } else {
-            for (Payment p : recentPayments) {
-                com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client c = p.getClient();
-                String name = c.getName() + " " + c.getLastName();
-                String text = name + " pagó " + (c.getCurrentPlan() != null ? c.getCurrentPlan().getNamePlan() : "membresía");
+            for (PaymentDTO p : recentPayments) {
+                String name = p.getNameClient();
+                String text = name + " pagó " + (p.getNamePlan() != null && !p.getNamePlan().isEmpty() ? p.getNamePlan() : "membresía");
                 
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
                 String timeText = "Fecha: " + p.getPaymentDate().format(formatter);
@@ -65,7 +63,7 @@ public class RecentActivityPanel extends JPanel {
                 Color badgeBg = new Color(16, 185, 129, 30);
                 String iconType = "check";
                 
-                if (p.getPaymentStatus() == PaymentStatus.PENDIENTE) {
+                if ("PENDIENTE".equals(p.getPaymentStatus())) {
                     text = name + " tiene un pago pendiente";
                     iconColor = Color.decode("#f59e0b");
                     badgeBg = new Color(245, 158, 11, 30);

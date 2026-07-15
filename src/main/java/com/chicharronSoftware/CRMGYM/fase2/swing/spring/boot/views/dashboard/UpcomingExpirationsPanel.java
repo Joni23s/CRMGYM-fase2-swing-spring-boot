@@ -1,6 +1,6 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.dashboard;
 
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Payment;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
@@ -44,7 +44,7 @@ public class UpcomingExpirationsPanel extends JPanel {
         add(listPanel, "cell 0 1, grow");
     }
 
-    public void updateData(List<Payment> pendingPayments) {
+    public void updateData(List<PaymentDTO> pendingPayments) {
         listPanel.removeAll();
         if (pendingPayments == null || pendingPayments.isEmpty()) {
             JLabel emptyLabel = new JLabel("No hay pagos pendientes");
@@ -52,13 +52,12 @@ public class UpcomingExpirationsPanel extends JPanel {
             emptyLabel.setForeground(Theme.TEXT_INACTIVE);
             listPanel.add(emptyLabel, "align center");
         } else {
-            for (Payment p : pendingPayments) {
-                com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client c = p.getClient();
-                String name = c.getName() + " " + c.getLastName();
-                String plan = c.getCurrentPlan() != null ? c.getCurrentPlan().getNamePlan() : "Sin Plan";
+            for (PaymentDTO p : pendingPayments) {
+                String name = p.getNameClient();
+                String plan = p.getNamePlan() != null && !p.getNamePlan().isEmpty() ? p.getNamePlan() : "Sin Plan";
                 
                 String initials = "";
-                if (!name.trim().isEmpty()) {
+                if (name != null && !name.trim().isEmpty()) {
                     String[] parts = name.trim().split("\\s+");
                     if (parts.length >= 2) {
                         initials = ("" + parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
@@ -74,7 +73,7 @@ public class UpcomingExpirationsPanel extends JPanel {
                 Color alertColor = Color.decode("#f59e0b");
                 Color badgeBg = new Color(245, 158, 11, 30);
                 
-                if (p.getPaymentStatus() == PaymentStatus.VENCIDO) {
+                if ("VENCIDO".equals(p.getPaymentStatus())) {
                     alertText = "VENCIDO";
                     alertColor = Color.decode("#ef4444");
                     badgeBg = new Color(239, 68, 68, 30);
