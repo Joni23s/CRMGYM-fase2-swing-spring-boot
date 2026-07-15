@@ -66,25 +66,43 @@ public class PlansPresenter {
             Integer selectedHours = (Integer) view.getSpinnerHours().getValue();
             Integer selectedDays = (Integer) view.getSpinnerDays().getValue();
 
+            final Plan plan;
             if (view.isEditMode()) {
-                Plan plan = new Plan(view.getEditingPlanId(), name, selectedDays, selectedHours, cost, notes, true);
-                planService.save(plan);
+                plan = new Plan(view.getEditingPlanId(), name, selectedDays, selectedHours, cost, notes, true);
             } else {
-                Plan plan = new Plan(name, selectedDays, selectedHours, cost, notes, true);
-                planService.save(plan);
+                plan = new Plan(name, selectedDays, selectedHours, cost, notes, true);
             }
 
-            String msg = view.isEditMode() ? "Plan actualizado correctamente." : "Plan guardado correctamente.";
-            view.showSuccess(msg, "Éxito");
+            view.getBtnSave().setEnabled(false);
+
+            com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+                () -> {
+                    planService.save(plan);
+                    return plan;
+                },
+                new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<Plan>() {
+                    @Override
+                    public void onSuccess(Plan savedPlan) {
+                        view.getBtnSave().setEnabled(true);
+                        String msg = view.isEditMode() ? "Plan actualizado correctamente." : "Plan guardado correctamente.";
+                        view.showSuccess(msg, "Éxito");
+                        view.resetForm();
+                        loadPlansToTableAsync(() -> planService.getAllPlansDTO());
+                    }
+
+                    @Override
+                    public void onError(Exception ex) {
+                        view.getBtnSave().setEnabled(true);
+                        view.showError("Error al guardar el plan: " + ex.getMessage(), "Error");
+                    }
+                }
+            );
 
         } catch (NumberFormatException ex) {
             view.showError("El valor ingresado no es válido.", "Error de formato");
         } catch (Exception ex) {
             view.showError("Error al guardar el plan: " + ex.getMessage(), "Error");
         }
-
-        view.resetForm();
-        loadPlansToTableAsync(() -> planService.getAllPlansDTO());
     }
 
     private void onModify() {
@@ -120,11 +138,33 @@ public class PlansPresenter {
         }
 
         int id = Integer.parseInt(view.getTableListPlans().getValueAt(filaSelected, 0).toString());
-        planService.changeStatusWithClients(id, status);
 
-        view.showSuccess("Estado actualizado correctamente.", "Éxito");
-        view.resetForm();
-        loadPlansToTableAsync(() -> planService.getAllPlansDTO());
+        view.getBtnActivate().setEnabled(false);
+        view.getBtnDeactivate().setEnabled(false);
+
+        com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
+            () -> {
+                planService.changeStatusWithClients(id, status);
+                return null;
+            },
+            new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    view.getBtnActivate().setEnabled(true);
+                    view.getBtnDeactivate().setEnabled(true);
+                    view.showSuccess("Estado actualizado correctamente.", "Éxito");
+                    view.resetForm();
+                    loadPlansToTableAsync(() -> planService.getAllPlansDTO());
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    view.getBtnActivate().setEnabled(true);
+                    view.getBtnDeactivate().setEnabled(true);
+                    view.showError("Error al actualizar estado: " + ex.getMessage(), "Error");
+                }
+            }
+        );
     }
 
     private void onActivate() {

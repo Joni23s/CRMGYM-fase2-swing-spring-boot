@@ -24,15 +24,17 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findAll();
 
     // Buscar pagos de un cliente por DNI
+    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
     List<Payment> findByClient_DocumentId(int documentId);
 
     // Buscar pagos por estado (ejemplo: PENDING, COMPLETED, OVERDUE)
+    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
     List<Payment> findByPaymentStatus(PaymentStatus paymentStatus);
 
-
-
+    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
     List<Payment> findByClient_DocumentIdOrderByPaymentDateDesc(Integer clientId);
 
+    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
     Optional<Payment> findTopByClient_DocumentIdOrderByPaymentDateDesc(Integer clientId);
 
     // [MEJORA JUNIOR] Actualización masiva (bulk update).

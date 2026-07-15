@@ -78,41 +78,57 @@ public class ClientPresenter {
 
             int dni = Integer.parseInt(dniText);
 
-            if (!view.isEditMode() && !clientValidation.isDniAvailable(dni)) {
-                view.showWarning("❌ Ya existe un cliente con DNI: " + dni + "\nIntente con un DNI diferente.", "DNI duplicado");
-                return;
-            }
+            view.getBtnSave().setEnabled(false);
 
-            if (!email.isEmpty() && !clientValidation.isValidEmail(email)) {
-                view.showError("El email ingresado no tiene un formato válido.", "Email inválido");
-                return;
-            }
+            AsyncDataLoader.loadData(
+                () -> {
+                    if (!view.isEditMode() && !clientValidation.isDniAvailable(dni)) {
+                        throw new IllegalArgumentException("Ya existe un cliente con DNI: " + dni + "\nIntente con un DNI diferente.");
+                    }
 
-            String phone = phoneText.isEmpty() ? null : phoneText;
-            if (phone != null && !clientValidation.isValidPhone(phone)) {
-                view.showError("El número de celular ingresado no es válido.", "Teléfono inválido");
-                return;
-            }
+                    if (!email.isEmpty() && !clientValidation.isValidEmail(email)) {
+                        throw new IllegalArgumentException("El email ingresado no tiene un formato válido.");
+                    }
 
-            Optional<Plan> planOptional = planService.findByNamePlanIgnoreCase(selectedPlanName);
-            if (planOptional.isEmpty()) {
-                view.showError("No se encontró el plan seleccionado.", "Error");
-                return;
-            }
+                    String phone = phoneText.isEmpty() ? null : phoneText;
+                    if (phone != null && !clientValidation.isValidPhone(phone)) {
+                        throw new IllegalArgumentException("El número de celular ingresado no es válido.");
+                    }
 
-            // Guardar o actualizar la entidad mapeada a través de la capa de servicio de Spring Boot
-            Client client = new Client(dni, name, lastName, email, phone, true, planOptional.get());
-            clientService.save(client);
-            
-            String msg = view.isEditMode() ? "Cliente actualizado correctamente." : "Cliente guardado correctamente.";
-            view.showSuccess(msg, "Éxito");
+                    Plan plan = planService.findByNamePlanIgnoreCase(selectedPlanName)
+                            .orElseThrow(() -> new IllegalArgumentException("No se encontró el plan seleccionado."));
 
+                    Client client = new Client(dni, name, lastName, email, phone, true, plan);
+                    clientService.save(client);
+                    return client;
+                },
+                new AsyncDataLoader.DataLoadCallback<Client>() {
+                    @Override
+                    public void onSuccess(Client savedClient) {
+                        view.getBtnSave().setEnabled(true);
+                        String msg = view.isEditMode() ? "Cliente actualizado correctamente." : "Cliente guardado correctamente.";
+                        view.showSuccess(msg, "Éxito");
+                        view.resetForm();
+                        loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
+                    }
+
+                    @Override
+                    public void onError(Exception ex) {
+                        view.getBtnSave().setEnabled(true);
+                        if (ex instanceof IllegalArgumentException) {
+                            view.showWarning(ex.getMessage(), "Validación fallida");
+                        } else {
+                            view.showError("Ocurrió un error al guardar el cliente: " + ex.getMessage(), "Error");
+                        }
+                    }
+                }
+            );
+
+        } catch (NumberFormatException ex) {
+            view.showError("El DNI debe ser un número válido.", "Error");
         } catch (Exception ex) {
-            view.showError("Ocurrió un error al guardar el cliente: " + ex.getMessage(), "Error");
+            view.showError("Ocurrió un error al procesar el cliente: " + ex.getMessage(), "Error");
         }
-
-        view.resetForm();
-        loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
     }
 
     private void onModify() {
@@ -173,17 +189,43 @@ public class ClientPresenter {
         }
 
         int dni = Integer.parseInt(view.getTableListClients().getValueAt(filaSelected, 0).toString());
-        Optional<Client> clientOpt = clientService.findById(dni);
 
-        if (clientOpt.isPresent()) {
-            Client client = clientOpt.get();
-            client.setIsActive(status);
-            clientService.save(client);
+        view.getBtnActivate().setEnabled(false);
+        view.getBtnDeactivate().setEnabled(false);
 
-            view.showSuccess("Estado actualizado correctamente.", "Éxito");
-            view.resetForm();
-            loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
-        }
+        AsyncDataLoader.loadData(
+            () -> {
+                Optional<Client> clientOpt = clientService.findById(dni);
+                if (clientOpt.isPresent()) {
+                    Client client = clientOpt.get();
+                    client.setIsActive(status);
+                    clientService.save(client);
+                    return true;
+                }
+                return false;
+            },
+            new AsyncDataLoader.DataLoadCallback<Boolean>() {
+                @Override
+                public void onSuccess(Boolean result) {
+                    view.getBtnActivate().setEnabled(true);
+                    view.getBtnDeactivate().setEnabled(true);
+                    if (result) {
+                        view.showSuccess("Estado actualizado correctamente.", "Éxito");
+                        view.resetForm();
+                        loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
+                    } else {
+                        view.showError("No se encontró el cliente.", "Error");
+                    }
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    view.getBtnActivate().setEnabled(true);
+                    view.getBtnDeactivate().setEnabled(true);
+                    view.showError("Error al actualizar estado: " + ex.getMessage(), "Error");
+                }
+            }
+        );
     }
 
     private void onSearch() {
@@ -272,12 +314,27 @@ public class ClientPresenter {
     private void loadPlansToComboBox() {
         view.getComboBoxPlan().removeAllItems();
         view.getComboBoxPlan().addItem("Seleccione un Plan *");
-        List<PlanDTO> planes = planService.findByIsActiveDTO(true);
-        if (planes != null) {
-            for (PlanDTO plan : planes) {
-                view.getComboBoxPlan().addItem(plan.toString());
+        view.getComboBoxPlan().setEnabled(false);
+        AsyncDataLoader.loadData(
+            () -> planService.findByIsActiveDTO(true),
+            new AsyncDataLoader.DataLoadCallback<List<PlanDTO>>() {
+                @Override
+                public void onSuccess(List<PlanDTO> planes) {
+                    view.getComboBoxPlan().setEnabled(true);
+                    if (planes != null) {
+                        for (PlanDTO plan : planes) {
+                            view.getComboBoxPlan().addItem(plan.toString());
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    view.getComboBoxPlan().setEnabled(true);
+                    view.showError("Error al cargar planes: " + ex.getMessage(), "Error");
+                }
             }
-        }
+        );
     }
 
     private void loadClientsToTableAsync(java.util.concurrent.Callable<List<ClientDTO>> loader) {

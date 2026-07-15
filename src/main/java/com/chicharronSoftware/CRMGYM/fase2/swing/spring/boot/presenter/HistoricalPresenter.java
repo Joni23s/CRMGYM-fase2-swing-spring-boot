@@ -93,53 +93,85 @@ public class HistoricalPresenter {
     }
 
     private void loadPlansToComboBox(boolean active) {
-        List<PlanDTO> planes = planService.findByIsActiveDTO(active);
-        view.populatePlansComboBox(planes != null ? planes : new ArrayList<>());
+        view.getComboBoxPlan().setEnabled(false);
+        AsyncDataLoader.loadData(
+            () -> planService.findByIsActiveDTO(active),
+            new AsyncDataLoader.DataLoadCallback<List<PlanDTO>>() {
+                @Override
+                public void onSuccess(List<PlanDTO> planes) {
+                    view.getComboBoxPlan().setEnabled(true);
+                    view.populatePlansComboBox(planes != null ? planes : new ArrayList<>());
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    view.getComboBoxPlan().setEnabled(true);
+                    view.showError("Error al cargar planes: " + ex.getMessage(), "Error");
+                }
+            }
+        );
     }
 
     private void onSearch() {
-        Set<Client> clients = new HashSet<>();
+        String name = view.getTxtName().getText().trim();
+        String lastName = view.getTxtLastName().getText().trim();
+        String dniText = view.getTxtDni().getText().trim();
+        String phone = view.getTxtPhone1().getText().trim();
+        int planSelectedIndex = view.getComboBoxPlan().getSelectedIndex();
+        String selectedPlan = planSelectedIndex != 0 ? view.getComboBoxPlan().getSelectedItem().toString() : null;
 
-        if (view.getBtnName().isSelected()) {
-            String name = view.getTxtName().getText().trim();
-            if (!name.isEmpty()) {
-                clients.addAll(clientService.findByName(name));
+        boolean isNameSelected = view.getBtnName().isSelected();
+        boolean isLastNameSelected = view.getBtnLastName().isSelected();
+        boolean isDniSelected = view.getBtnDni().isSelected();
+        boolean isPhoneSelected = view.getBtnPhone().isSelected();
+        boolean isPlanSelected = view.getBtnPlan().isSelected();
+
+        view.getBtnSearch().setEnabled(false);
+
+        AsyncDataLoader.loadData(
+            () -> {
+                Set<Client> clients = new HashSet<>();
+
+                if (isNameSelected && !name.isEmpty()) {
+                    clients.addAll(clientService.findByName(name));
+                }
+
+                if (isLastNameSelected && !lastName.isEmpty()) {
+                    clients.addAll(clientService.findByLastName(lastName));
+                }
+
+                if (isDniSelected && !dniText.isEmpty()) {
+                    try {
+                        int dni = Integer.parseInt(dniText);
+                        clientService.findById(dni).ifPresent(clients::add);
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                if (isPhoneSelected && !phone.isEmpty()) {
+                    clients.addAll(clientService.findByPhoneNumber(phone));
+                }
+
+                if (isPlanSelected && selectedPlan != null) {
+                    clients.addAll(clientService.findByCurrentPlan(selectedPlan));
+                }
+
+                return new ArrayList<>(clients);
+            },
+            new AsyncDataLoader.DataLoadCallback<List<Client>>() {
+                @Override
+                public void onSuccess(List<Client> clients) {
+                    view.getBtnSearch().setEnabled(true);
+                    view.getTitleList().setText("Lista de Historial: Buscados");
+                    loadHistoricalPlanToTableAsync(clients);
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    view.getBtnSearch().setEnabled(true);
+                    view.showError("Error en la búsqueda de clientes: " + ex.getMessage(), "Error");
+                }
             }
-        }
-
-        if (view.getBtnLastName().isSelected()) {
-            String lastName = view.getTxtLastName().getText().trim();
-            if (!lastName.isEmpty()) {
-                clients.addAll(clientService.findByLastName(lastName));
-            }
-        }
-
-        if (view.getBtnDni().isSelected()) {
-            String dniText = view.getTxtDni().getText().trim();
-            if (!dniText.isEmpty()) {
-                try {
-                    int dni = Integer.parseInt(dniText);
-                    clientService.findById(dni).ifPresent(clients::add);
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-
-        if (view.getBtnPhone().isSelected()) {
-            String phone = view.getTxtPhone1().getText().trim();
-            if (!phone.isEmpty()) {
-                clients.addAll(clientService.findByPhoneNumber(phone));
-            }
-        }
-
-        if (view.getBtnPlan().isSelected()) {
-            if (view.getComboBoxPlan().getSelectedIndex() != 0) {
-                String selectedPlan = view.getComboBoxPlan().getSelectedItem().toString();
-                clients.addAll(clientService.findByCurrentPlan(selectedPlan));
-            }
-        }
-
-        view.getTitleList().setText("Lista de Historial: Buscados");
-        loadHistoricalPlanToTableAsync(new ArrayList<>(clients));
+        );
     }
 
     private void onSelectClient() {
@@ -153,18 +185,34 @@ public class HistoricalPresenter {
             String idStr = view.getTableListClients().getValueAt(filaSelected, 4).toString();
             int clientId = Integer.parseInt(idStr);
 
-            Optional<Client> clientOpt = clientService.findById(clientId);
-            if (clientOpt.isEmpty()) {
-                view.showError("No se encontró el cliente con ID: " + clientId, "Error");
-                return;
-            }
+            view.getBtnSelect().setEnabled(false);
 
-            Client client = clientOpt.get();
-            List<Client> clients = new ArrayList<>();
-            clients.add(client);
+            AsyncDataLoader.loadData(
+                () -> clientService.findById(clientId),
+                new AsyncDataLoader.DataLoadCallback<Optional<Client>>() {
+                    @Override
+                    public void onSuccess(Optional<Client> clientOpt) {
+                        view.getBtnSelect().setEnabled(true);
+                        if (clientOpt.isEmpty()) {
+                            view.showError("No se encontró el cliente con ID: " + clientId, "Error");
+                            return;
+                        }
 
-            view.getTitleList().setText("Historial de Cliente: " + client.getDocumentId());
-            loadHistoricalPlanToTableAsync(clients);
+                        Client client = clientOpt.get();
+                        List<Client> clients = new ArrayList<>();
+                        clients.add(client);
+
+                        view.getTitleList().setText("Historial de Cliente: " + client.getDocumentId());
+                        loadHistoricalPlanToTableAsync(clients);
+                    }
+
+                    @Override
+                    public void onError(Exception ex) {
+                        view.getBtnSelect().setEnabled(true);
+                        view.showError("Ocurrió un error al obtener el cliente: " + ex.getMessage(), "Error");
+                    }
+                }
+            );
 
         } catch (NumberFormatException e) {
             view.showError("El valor de ID no es válido.", "Error de formato");

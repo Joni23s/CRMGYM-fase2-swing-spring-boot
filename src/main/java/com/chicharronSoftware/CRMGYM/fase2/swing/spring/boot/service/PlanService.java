@@ -47,9 +47,10 @@ public class PlanService {
         planRepository.findById(id).ifPresent(plan -> {
             if (!status) {
                 List<Client> clients = clientService.findByCurrentPlan(plan.getNamePlan());
+                Optional<Plan> noPlanOpt = findByNamePlanIgnoreCase("Sin Plan");
                 clients.forEach(client -> {
                     historicalPlanService.closeCurrentPlan(client);
-                    findByNamePlanIgnoreCase("Sin Plan").ifPresent(noPlan -> {
+                    noPlanOpt.ifPresent(noPlan -> {
                         client.setCurrentPlan(noPlan);
                         clientService.save(client);
                     });

@@ -91,32 +91,30 @@ public class PaymentPresenter {
                 return;
             }
 
-            Optional<Client> clientOpt = clientService.findById(dni);
-            if (clientOpt.isEmpty()) {
-                view.showError("No se encontró un cliente con DNI " + dni, "Cliente no encontrado");
-                return;
-            }
-            Client client = clientOpt.get();
+            view.getBtnSave().setEnabled(false);
 
-            baseAmountText = baseAmountText.replace(",", ".").replaceAll("[^0-9.]", "");
-            discountText = discountText.replace(",", ".").replaceAll("[^0-9.]", "");
-
-            BigDecimal baseAmount;
-            BigDecimal discount;
-
+            BigDecimal baseAmountVal;
+            BigDecimal discountVal;
             try {
-                baseAmount = new BigDecimal(baseAmountText);
+                String cleanBase = baseAmountText.replace(",", ".").replaceAll("[^0-9.]", "");
+                baseAmountVal = new BigDecimal(cleanBase);
+                String cleanDiscount = discountText.replace(",", ".").replaceAll("[^0-9.]", "");
+                discountVal = cleanDiscount.isEmpty() ? BigDecimal.ZERO : new BigDecimal(cleanDiscount);
             } catch (NumberFormatException ex) {
-                view.showError("El monto base no es válido.", "Error en monto base");
+                view.getBtnSave().setEnabled(true);
+                view.showError("Los montos ingresados no son válidos.", "Error en monto");
                 return;
             }
 
-            try {
-                discount = discountText.isEmpty() ? BigDecimal.ZERO : new BigDecimal(discountText);
-            } catch (NumberFormatException ex) {
-                view.showError("El descuento no es válido.", "Error en descuento");
+            BigDecimal finalAmount = baseAmountVal.subtract(discountVal);
+            if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+                view.getBtnSave().setEnabled(true);
+                view.showError("El monto final no puede ser negativo.", "Error");
                 return;
             }
+
+            LocalDate period = periodDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate payment = paymentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
             PaymentMethod paymentMethod = Arrays.stream(PaymentMethod.values())
                     .filter(pm -> pm.getDescripcion().equals(paymentMethodDesc))
@@ -128,51 +126,64 @@ public class PaymentPresenter {
                     .findFirst()
                     .orElse(PaymentStatus.PENDIENTE);
 
-            BigDecimal finalAmount = baseAmount.subtract(discount);
-            if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
-                view.showError("El monto final no puede ser negativo.", "Error");
-                return;
-            }
+            AsyncDataLoader.loadData(
+                () -> {
+                    Client client = clientService.findById(dni)
+                            .orElseThrow(() -> new IllegalArgumentException("No se encontró un cliente con DNI " + dni));
 
-            LocalDate period = periodDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            LocalDate payment = paymentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                    Payment paymentEntity;
+                    if (view.isEditMode() && view.getEditingPaymentId() != null) {
+                        paymentEntity = paymentService.findById(view.getEditingPaymentId())
+                                .orElseThrow(() -> new IllegalArgumentException("No se encontró el pago a modificar."));
+                        paymentEntity.setPeriod(period);
+                        paymentEntity.setPaymentDate(payment);
+                        paymentEntity.setBaseAmount(baseAmountVal);
+                        paymentEntity.setDiscountApplied(discountVal);
+                        paymentEntity.setFinalAmount(finalAmount);
+                        paymentEntity.setPaymentMethod(paymentMethod);
+                        paymentEntity.setPaymentStatus(paymentStatus);
+                        paymentEntity.setClient(client);
+                    } else {
+                        paymentEntity = Payment.builder()
+                                .period(period)
+                                .paymentDate(payment)
+                                .baseAmount(baseAmountVal)
+                                .discountApplied(discountVal)
+                                .finalAmount(finalAmount)
+                                .paymentMethod(paymentMethod)
+                                .paymentStatus(paymentStatus)
+                                .client(client)
+                                .build();
+                    }
 
-            Payment paymentEntity;
-            if (view.isEditMode() && view.getEditingPaymentId() != null) {
-                paymentEntity = paymentService.findById(view.getEditingPaymentId())
-                        .orElseThrow(() -> new RuntimeException("No se encontró el pago a modificar."));
-                paymentEntity.setPeriod(period);
-                paymentEntity.setPaymentDate(payment);
-                paymentEntity.setBaseAmount(baseAmount);
-                paymentEntity.setDiscountApplied(discount);
-                paymentEntity.setFinalAmount(finalAmount);
-                paymentEntity.setPaymentMethod(paymentMethod);
-                paymentEntity.setPaymentStatus(paymentStatus);
-                paymentEntity.setClient(client);
-            } else {
-                paymentEntity = Payment.builder()
-                        .period(period)
-                        .paymentDate(payment)
-                        .baseAmount(baseAmount)
-                        .discountApplied(discount)
-                        .finalAmount(finalAmount)
-                        .paymentMethod(paymentMethod)
-                        .paymentStatus(paymentStatus)
-                        .client(client)
-                        .build();
-            }
+                    paymentService.save(paymentEntity);
+                    return paymentEntity;
+                },
+                new AsyncDataLoader.DataLoadCallback<Payment>() {
+                    @Override
+                    public void onSuccess(Payment result) {
+                        view.getBtnSave().setEnabled(true);
+                        String msg = view.isEditMode() ? "Pago actualizado correctamente." : "Pago guardado correctamente.";
+                        view.showSuccess(msg, "Éxito");
+                        view.resetForm();
+                        loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
+                    }
 
-            paymentService.save(paymentEntity);
-            
-            String msg = view.isEditMode() ? "Pago actualizado correctamente." : "Pago guardado correctamente.";
-            view.showSuccess(msg, "Éxito");
+                    @Override
+                    public void onError(Exception ex) {
+                        view.getBtnSave().setEnabled(true);
+                        if (ex instanceof IllegalArgumentException) {
+                            view.showError(ex.getMessage(), "Error");
+                        } else {
+                            view.showError("Ocurrió un error al guardar el pago: " + ex.getMessage(), "Error");
+                        }
+                    }
+                }
+            );
 
         } catch (Exception ex) {
-            view.showError("Ocurrió un error al guardar el pago: " + ex.getMessage(), "Error");
+            view.showError("Ocurrió un error al procesar el pago: " + ex.getMessage(), "Error");
         }
-
-        view.resetForm();
-        loadPaymentsToTableAsync(() -> paymentService.getAllPaymentsDTO());
     }
 
     private void onSearchDni() {
@@ -182,47 +193,78 @@ public class PaymentPresenter {
             return;
         }
 
+        int dniNumber;
         try {
-            int dniNumber = Integer.parseInt(dniText);
-            Optional<Client> client = clientService.findById(dniNumber);
-
-            if (client.isEmpty()) {
-                view.showError("No se encontró un cliente con ese DNI.", "Error");
-                return;
-            }
-
-            Optional<Payment> lastPayment = paymentService.findLastPaymentByClientId(client.get().getDocumentId());
-
-            if (lastPayment.isPresent()) {
-                view.getTxtBase_amount().setText(String.valueOf(lastPayment.get().getBaseAmount()));
-                view.getTxtDiscount().setText(lastPayment.get().getDiscountApplied() != null ? String.valueOf(lastPayment.get().getDiscountApplied()) : "0");
-                view.getComboBoxPayment_method().setSelectedItem(lastPayment.get().getPaymentMethod().getDescripcion());
-                view.getComboBoxPayment_status().setSelectedItem(lastPayment.get().getPaymentStatus().getDescripcion());
-                
-                view.getjDatePeriod().setDate(java.sql.Date.valueOf(lastPayment.get().getPeriod()));
-                view.getjDatePay().setDate(java.sql.Date.valueOf(lastPayment.get().getPaymentDate()));
-            } else {
-                if (client.get().getCurrentPlan() != null) {
-                    view.getTxtBase_amount().setText(String.valueOf(client.get().getCurrentPlan().getValue()));
-                }
-                view.getTxtDiscount().setText("0");
-                view.getjDatePay().setDate(new Date());
-                view.getjDatePeriod().setDate(new Date());
-                view.showSuccess("El cliente no tiene pagos registrados. Se precargó el costo de su plan actual.", "Aviso");
-            }
-
-            List<Payment> payments = paymentService.findAllByClientId(client.get().getDocumentId());
-            loadPaymentsToTableAsync(() -> payments.stream()
-                    .map(PaymentMapper::toDTO)
-                    .collect(java.util.stream.Collectors.toList()));
-
-            view.getTitleCharge().setText("Pago de " + client.get().getName());
-
+            dniNumber = Integer.parseInt(dniText);
         } catch (NumberFormatException ex) {
             view.showError("El DNI debe ser numérico.", "Error");
-        } catch (Exception ex) {
-            view.showError("Error al buscar el cliente: " + ex.getMessage(), "Error");
+            return;
         }
+
+        view.getBtnSearch().setEnabled(false);
+
+        class SearchResult {
+            final Client client;
+            final Payment lastPayment;
+            final List<Payment> payments;
+            SearchResult(Client client, Payment lastPayment, List<Payment> payments) {
+                this.client = client;
+                this.lastPayment = lastPayment;
+                this.payments = payments;
+            }
+        }
+
+        AsyncDataLoader.loadData(
+            () -> {
+                Client client = clientService.findById(dniNumber)
+                        .orElseThrow(() -> new IllegalArgumentException("No se encontró un cliente con ese DNI."));
+                Payment lastPayment = paymentService.findLastPaymentByClientId(client.getDocumentId()).orElse(null);
+                List<Payment> payments = paymentService.findAllByClientId(client.getDocumentId());
+                return new SearchResult(client, lastPayment, payments);
+            },
+            new AsyncDataLoader.DataLoadCallback<SearchResult>() {
+                @Override
+                public void onSuccess(SearchResult result) {
+                    view.getBtnSearch().setEnabled(true);
+                    Client client = result.client;
+                    Payment lastPayment = result.lastPayment;
+
+                    if (lastPayment != null) {
+                        view.getTxtBase_amount().setText(String.valueOf(lastPayment.getBaseAmount()));
+                        view.getTxtDiscount().setText(lastPayment.getDiscountApplied() != null ? String.valueOf(lastPayment.getDiscountApplied()) : "0");
+                        view.getComboBoxPayment_method().setSelectedItem(lastPayment.getPaymentMethod().getDescripcion());
+                        view.getComboBoxPayment_status().setSelectedItem(lastPayment.getPaymentStatus().getDescripcion());
+                        
+                        view.getjDatePeriod().setDate(java.sql.Date.valueOf(lastPayment.getPeriod()));
+                        view.getjDatePay().setDate(java.sql.Date.valueOf(lastPayment.getPaymentDate()));
+                    } else {
+                        if (client.getCurrentPlan() != null) {
+                            view.getTxtBase_amount().setText(String.valueOf(client.getCurrentPlan().getValue()));
+                        }
+                        view.getTxtDiscount().setText("0");
+                        view.getjDatePay().setDate(new Date());
+                        view.getjDatePeriod().setDate(new Date());
+                        view.showSuccess("El cliente no tiene pagos registrados. Se precargó el costo de su plan actual.", "Aviso");
+                    }
+
+                    loadPaymentsToTableAsync(() -> result.payments.stream()
+                            .map(PaymentMapper::toDTO)
+                            .collect(java.util.stream.Collectors.toList()));
+
+                    view.getTitleCharge().setText("Pago de " + client.getName());
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    view.getBtnSearch().setEnabled(true);
+                    if (ex instanceof IllegalArgumentException) {
+                        view.showError(ex.getMessage(), "Error");
+                    } else {
+                        view.showError("Error al buscar el cliente: " + ex.getMessage(), "Error");
+                    }
+                }
+            }
+        );
     }
 
     private void onModify() {
@@ -233,22 +275,38 @@ public class PaymentPresenter {
         }
 
         Long paymentId = Long.parseLong(view.getTableListPayments().getValueAt(selectedRow, 0).toString());
-        Payment payment = paymentService.findById(paymentId)
-                .orElseThrow(() -> new RuntimeException("No se encontró el pago."));
 
-        view.getTxtDni().setText(String.valueOf(payment.getClient().getDocumentId()));
-        view.getTxtBase_amount().setText(String.valueOf(payment.getBaseAmount()));
-        view.getTxtDiscount().setText(payment.getDiscountApplied() != null ? payment.getDiscountApplied().toString() : "0");
-        view.getComboBoxPayment_method().setSelectedItem(payment.getPaymentMethod().getDescripcion());
-        view.getComboBoxPayment_status().setSelectedItem(payment.getPaymentStatus().getDescripcion());
+        view.getBtnModify().setEnabled(false);
 
-        view.getjDatePeriod().setDate(java.sql.Date.valueOf(payment.getPeriod()));
-        view.getjDatePay().setDate(java.sql.Date.valueOf(payment.getPaymentDate()));
+        AsyncDataLoader.loadData(
+            () -> paymentService.findById(paymentId)
+                    .orElseThrow(() -> new IllegalArgumentException("No se encontró el pago.")),
+            new AsyncDataLoader.DataLoadCallback<Payment>() {
+                @Override
+                public void onSuccess(Payment payment) {
+                    view.getBtnModify().setEnabled(true);
+                    view.getTxtDni().setText(String.valueOf(payment.getClient().getDocumentId()));
+                    view.getTxtBase_amount().setText(String.valueOf(payment.getBaseAmount()));
+                    view.getTxtDiscount().setText(payment.getDiscountApplied() != null ? payment.getDiscountApplied().toString() : "0");
+                    view.getComboBoxPayment_method().setSelectedItem(payment.getPaymentMethod().getDescripcion());
+                    view.getComboBoxPayment_status().setSelectedItem(payment.getPaymentStatus().getDescripcion());
 
-        view.setEditMode(true);
-        view.setEditingPaymentId(paymentId);
-        view.getTxtDni().setEnabled(false);
-        view.getTitleCharge().setText("Modificar Pago");
+                    view.getjDatePeriod().setDate(java.sql.Date.valueOf(payment.getPeriod()));
+                    view.getjDatePay().setDate(java.sql.Date.valueOf(payment.getPaymentDate()));
+
+                    view.setEditMode(true);
+                    view.setEditingPaymentId(paymentId);
+                    view.getTxtDni().setEnabled(false);
+                    view.getTitleCharge().setText("Modificar Pago");
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    view.getBtnModify().setEnabled(true);
+                    view.showError("Error al cargar pago: " + ex.getMessage(), "Error");
+                }
+            }
+        );
     }
 
     private void onAll() {
