@@ -42,6 +42,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT COALESCE(SUM(p.finalAmount), 0) FROM Payment p WHERE p.paymentStatus = com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus.CONFIRMADO")
     java.math.BigDecimal sumTotalConfirmedRevenue();
 
+    @Query("SELECT COALESCE(SUM(p.finalAmount), 0) FROM Payment p WHERE p.paymentStatus = com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus.CONFIRMADO AND p.paymentDate = :today AND p.paymentMethod = :method")
+    java.math.BigDecimal sumTodayRevenueByMethod(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod method, LocalDate today);
+
     @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
     List<Payment> findTop4ByOrderByIdDesc();
 

@@ -61,6 +61,29 @@ public class MainPresenter {
             public void onNavigateToPayments() { navigateTo("Pagos"); }
             @Override
             public void onNavigateToHistory() { navigateTo("Historial"); }
+            @Override
+            public void onQuickSearchDni(String query) {
+                if (query == null || query.isBlank()) return;
+                try {
+                    Integer.parseInt(query.trim());
+                    // Búsqueda por DNI -> Módulo de Pagos
+                    navigateTo("Pagos");
+                    paymentPanel.getTxtDni().setText(query.trim());
+                    paymentPanel.getBtnSearch().doClick();
+                } catch (NumberFormatException ex) {
+                    // Búsqueda por Nombre -> Módulo de Socios
+                    navigateTo("Socios");
+                    clientPanel.getTxtName().setText(query.trim());
+                    clientPanel.getBtnSearch().doClick();
+                }
+            }
+            @Override
+            public void onCobrarSpecificClient(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO payment) {
+                if (payment == null || payment.getDocumentId() == null) return;
+                navigateTo("Pagos");
+                paymentPanel.getTxtDni().setText(String.valueOf(payment.getDocumentId()));
+                paymentPanel.getBtnSearch().doClick();
+            }
         });
 
         // Bind clicks from sidebar

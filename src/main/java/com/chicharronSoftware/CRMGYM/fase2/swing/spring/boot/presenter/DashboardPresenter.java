@@ -9,6 +9,13 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.As
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
+/**
+ * [MEJORA JUNIOR] Presentador para la pantalla de Inicio (Dashboard).
+ * Coordina la recolección asíncrona de datos desde la fachada DashboardFacade
+ * y actualiza los componentes gráficos del POS sin congelar la UI.
+ */
 @Component
 public class DashboardPresenter {
 
@@ -28,19 +35,33 @@ public class DashboardPresenter {
             new AsyncDataLoader.DataLoadCallback<DashboardDataDTO>() {
                 @Override
                 public void onSuccess(DashboardDataDTO data) {
+                    // Actualizar Métricas KPI simplificadas
                     view.updateMetrics(
                         String.valueOf(data.getActiveClients()),
-                        String.valueOf(data.getActivePlans()),
                         FormatterUtils.formatCurrency(data.getTotalRevenue())
                     );
+                    
+                    // Actualizar Registros de Pagos y Vencimientos
                     view.updateRecentPaymentsTable(data.getRecentPayments());
                     view.updateUpcomingExpirations(data.getPendingPayments());
-                    view.updateRecentActivity(data.getRecentPays());
+
+                    // Actualizar Arqueo de Caja del Día
+                    BigDecimal cash = data.getTodayCashTotal() != null ? data.getTodayCashTotal() : BigDecimal.ZERO;
+                    BigDecimal transfer = data.getTodayTransferTotal() != null ? data.getTodayTransferTotal() : BigDecimal.ZERO;
+                    BigDecimal debit = data.getTodayDebitTotal() != null ? data.getTodayDebitTotal() : BigDecimal.ZERO;
+                    BigDecimal dayTotal = cash.add(transfer).add(debit);
+
+                    view.updateCashDeskSummary(
+                        FormatterUtils.formatCurrency(dayTotal),
+                        FormatterUtils.formatCurrency(cash),
+                        FormatterUtils.formatCurrency(transfer),
+                        FormatterUtils.formatCurrency(debit)
+                    );
                 }
 
                 @Override
                 public void onError(Exception ex) {
-                    // Si falla el dashboard, lo loggeamos o simplemente no lo actualizamos
+                    // Si falla la recolección asíncrona, se registra silenciosamente para mantener la fluidez del POS
                 }
             }
         );

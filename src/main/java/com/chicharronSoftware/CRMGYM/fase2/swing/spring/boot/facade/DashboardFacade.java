@@ -52,6 +52,12 @@ public class DashboardFacade {
         // Lista de actividad reciente
         List<PaymentDTO> recentPays = recent;
 
-        return new DashboardDataDTO(activeClients, activePlans, totalRevenue, recent, pending, recentPays);
+        // Arqueo de caja del día por medio de pago
+        java.time.LocalDate today = java.time.LocalDate.now();
+        BigDecimal cashToday = paymentRepository.sumTodayRevenueByMethod(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod.EFECTIVO, today);
+        BigDecimal transferToday = paymentRepository.sumTodayRevenueByMethod(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod.TRANSFERENCIA, today);
+        BigDecimal debitToday = paymentRepository.sumTodayRevenueByMethod(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod.TARJETA_DEBITO, today);
+
+        return new DashboardDataDTO(activeClients, activePlans, totalRevenue, recent, pending, recentPays, cashToday, transferToday, debitToday);
     }
 }

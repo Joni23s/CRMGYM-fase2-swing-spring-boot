@@ -86,33 +86,29 @@ public class StatusBadge extends JLabel {
         setText(text);
         this.currentType = type;
 
-        // Mapeo semántico de colores del Design System
+        // Mapeo semántico de colores del Design System (Fondo Sólido de Alto Contraste Operativo)
         switch (type) {
             case SUCCESS:
-                setForeground(Theme.STATUS_SUCCESS);
-                // 12% de opacidad para el fondo verde (255 * 0.12 ≈ 30)
-                this.badgeBg = new Color(Theme.STATUS_SUCCESS.getRed(), Theme.STATUS_SUCCESS.getGreen(), Theme.STATUS_SUCCESS.getBlue(), 30);
-                this.badgeBorder = Theme.STATUS_SUCCESS;
+                setForeground(new Color(0x4ADE80));
+                this.badgeBg = new Color(0x14532D);
+                this.badgeBorder = new Color(0x166534);
                 break;
                 
             case WARNING:
-                setForeground(Theme.STATUS_WARNING);
-                // 12% de opacidad para el fondo naranja (255 * 0.12 ≈ 30)
-                this.badgeBg = new Color(Theme.STATUS_WARNING.getRed(), Theme.STATUS_WARNING.getGreen(), Theme.STATUS_WARNING.getBlue(), 30);
-                this.badgeBorder = Theme.STATUS_WARNING;
+                setForeground(new Color(0xFDE047));
+                this.badgeBg = new Color(0x713F12);
+                this.badgeBorder = new Color(0x854D0E);
                 break;
                 
             case ERROR:
-                setForeground(Theme.STATUS_ERROR);
-                // 12% de opacidad para el fondo rojo (255 * 0.12 ≈ 30)
-                this.badgeBg = new Color(Theme.STATUS_ERROR.getRed(), Theme.STATUS_ERROR.getGreen(), Theme.STATUS_ERROR.getBlue(), 30);
-                this.badgeBorder = Theme.STATUS_ERROR;
+                setForeground(new Color(0xFCA5A5));
+                this.badgeBg = new Color(0x7F1D1D);
+                this.badgeBorder = new Color(0x991B1B);
                 break;
                 
             case NEUTRAL:
                 setForeground(Theme.TEXT_INACTIVE);
-                // 10% de opacidad para el fondo blanco (255 * 0.10 ≈ 25)
-                this.badgeBg = new Color(255, 255, 255, 25);
+                this.badgeBg = new Color(0x333A48);
                 this.badgeBorder = Theme.BORDER_SLATE;
                 break;
         }

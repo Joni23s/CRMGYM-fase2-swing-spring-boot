@@ -1,7 +1,6 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.dashboard;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 import net.miginfocom.swing.MigLayout;
@@ -11,13 +10,26 @@ import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * [MEJORA JUNIOR] Panel de Próximos Vencimientos con Acciones Directas en Línea (In-Line Actions).
+ * Permite al recepcionista cobrar una cuota vencida o próxima a vencer en 1 solo clic.
+ */
 public class UpcomingExpirationsPanel extends JPanel {
 
+    public interface OnCobrarClickListener {
+        void onCobrar(PaymentDTO payment);
+    }
+
     private JPanel listPanel;
+    private OnCobrarClickListener cobrarClickListener;
 
     public UpcomingExpirationsPanel() {
         setOpaque(false);
         initComponents();
+    }
+
+    public void setOnCobrarClickListener(OnCobrarClickListener listener) {
+        this.cobrarClickListener = listener;
     }
 
     private void initComponents() {
@@ -30,12 +42,6 @@ public class UpcomingExpirationsPanel extends JPanel {
         lblHeader.setFont(Theme.FONT_SECTION_TITLE);
         lblHeader.setForeground(Theme.TEXT_ACTIVE);
         headerPanel.add(lblHeader, "left");
-
-        JLabel lblLink = new JLabel("Ver todos");
-        lblLink.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblLink.setForeground(Theme.TEXT_INACTIVE);
-        lblLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        headerPanel.add(lblLink, "right");
 
         add(headerPanel, "cell 0 0, growx");
 
@@ -55,7 +61,7 @@ public class UpcomingExpirationsPanel extends JPanel {
             for (PaymentDTO p : pendingPayments) {
                 String name = p.getNameClient();
                 String plan = p.getNamePlan() != null && !p.getNamePlan().isEmpty() ? p.getNamePlan() : "Sin Plan";
-                
+
                 String initials = "";
                 if (name != null && !name.trim().isEmpty()) {
                     String[] parts = name.trim().split("\\s+");
@@ -67,19 +73,20 @@ public class UpcomingExpirationsPanel extends JPanel {
                         initials = parts[0].toUpperCase();
                     }
                 }
-                
+
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
-                String alertText = "Vence: " + p.getPeriod().format(formatter);
+                String alertText = "Vence: " + (p.getPeriod() != null ? p.getPeriod().format(formatter) : "-");
                 Color alertColor = Color.decode("#f59e0b");
                 Color badgeBg = new Color(245, 158, 11, 30);
-                
+
                 if ("VENCIDO".equals(p.getPaymentStatus())) {
                     alertText = "VENCIDO";
                     alertColor = Color.decode("#ef4444");
                     badgeBg = new Color(239, 68, 68, 30);
                 }
-                
-                listPanel.add(new ExpirationItem(name, plan, alertText, initials, badgeBg, alertColor), "growx");
+
+                ExpirationItem item = new ExpirationItem(p, name, plan, alertText, initials, badgeBg, alertColor, cobrarClickListener);
+                listPanel.add(item, "growx");
             }
         }
         listPanel.revalidate();
@@ -94,10 +101,11 @@ public class UpcomingExpirationsPanel extends JPanel {
 
     private static class ExpirationItem extends JPanel {
 
-        public ExpirationItem(String name, String planName, String alertText,
-                              String initials, Color badgeBgColor, Color alertTextColor) {
+        public ExpirationItem(PaymentDTO payment, String name, String planName, String alertText,
+                              String initials, Color badgeBgColor, Color alertTextColor,
+                              OnCobrarClickListener listener) {
             setOpaque(false);
-            setLayout(new MigLayout("ins 8 10 8 10, fill", "[32px!]10[grow][pref]", "[grow]"));
+            setLayout(new MigLayout("ins 8 10 8 10, fill", "[32px!]10[grow][pref]8[pref]", "[grow]"));
 
             JPanel badge = new JPanel(new MigLayout("ins 0, align center, fill")) {
                 @Override
@@ -111,7 +119,7 @@ public class UpcomingExpirationsPanel extends JPanel {
                     g2d.setColor(Color.WHITE);
                     g2d.setFont(new Font("Segoe UI", Font.BOLD, 11));
                     FontMetrics fm = g2d.getFontMetrics();
-                    int tx = (getWidth()  - fm.stringWidth(initials)) / 2;
+                    int tx = (getWidth() - fm.stringWidth(initials)) / 2;
                     int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
                     g2d.drawString(initials, tx, ty);
                     g2d.dispose();
@@ -135,9 +143,22 @@ public class UpcomingExpirationsPanel extends JPanel {
             lblAlert.setFont(new Font("Segoe UI", Font.BOLD, 10));
             lblAlert.setForeground(alertTextColor);
 
-            add(badge,     "cell 0 0, aligny center");
+            JButton btnCobrarInLine = new JButton("Cobrar ($)");
+            btnCobrarInLine.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            btnCobrarInLine.setBackground(Color.decode("#059669"));
+            btnCobrarInLine.setForeground(Color.WHITE);
+            btnCobrarInLine.setFocusPainted(false);
+            btnCobrarInLine.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnCobrarInLine.addActionListener(e -> {
+                if (listener != null) {
+                    listener.onCobrar(payment);
+                }
+            });
+
+            add(badge, "cell 0 0, aligny center");
             add(textPanel, "cell 1 0, aligny center");
-            add(lblAlert,  "cell 2 0, aligny center");
+            add(lblAlert, "cell 2 0, aligny center");
+            add(btnCobrarInLine, "cell 3 0, aligny center");
         }
 
         @Override
@@ -146,10 +167,10 @@ public class UpcomingExpirationsPanel extends JPanel {
             Graphics2D g2d = (Graphics2D) g.create();
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setColor(Theme.CARD_BG_ALT);
-            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
             g2d.setColor(Theme.BORDER_SLATE);
             g2d.setStroke(new BasicStroke(1.0f));
-            g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+            g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
             g2d.dispose();
         }
     }

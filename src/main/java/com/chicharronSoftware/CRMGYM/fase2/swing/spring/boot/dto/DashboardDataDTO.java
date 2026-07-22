@@ -19,4 +19,7 @@ public class DashboardDataDTO {
     private List<PaymentDTO> recentPayments;
     private List<PaymentDTO> pendingPayments;
     private List<PaymentDTO> recentPays;
+    private BigDecimal todayCashTotal;
+    private BigDecimal todayTransferTotal;
+    private BigDecimal todayDebitTotal;
 }
