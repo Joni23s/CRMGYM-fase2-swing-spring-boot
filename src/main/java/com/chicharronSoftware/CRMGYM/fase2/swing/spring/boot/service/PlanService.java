@@ -57,6 +57,9 @@ public class PlanService {
         });
     }
 
+    /**
+     * [MEJORA JUNIOR] Obtiene la lista de planes completa en formato DTO.
+     */
     public List<PlanDTO> getAllPlansDTO() {
         return planRepository.findAll()
                 .stream()
@@ -64,11 +67,48 @@ public class PlanService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * [MEJORA JUNIOR] Filtra los planes activos o inactivos y los retorna en formato DTO.
+     */
     public List<PlanDTO> findByIsActiveDTO(boolean isActive) {
         return planRepository.findByIsActive(isActive)
                 .stream()
                 .map(PlanMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * [MEJORA JUNIOR] Guarda o actualiza un plan a partir de su DTO.
+     * Permite que la capa de presentación (Swing / Presenter) interactúe 100% libre de entidades JPA.
+     * 
+     * @param dto Objeto DTO con los datos cargados desde el formulario visual.
+     * @return PlanDTO guardado y mapeado de vuelta.
+     */
+    public PlanDTO saveDTO(PlanDTO dto) {
+        Plan plan = PlanMapper.toEntity(dto);
+        Plan saved = planRepository.save(plan);
+        return PlanMapper.toDTO(saved);
+    }
+
+    /**
+     * [MEJORA JUNIOR] Realiza búsquedas combinadas por filtros de nombre, horas, días o tarifa.
+     * Retorna el conjunto resultante convertido a DTOs.
+     */
+    public List<PlanDTO> searchPlansDTO(String name, int hours, int days, BigDecimal cost) {
+        java.util.Set<Plan> plans = new java.util.HashSet<>();
+        if (name != null && !name.isBlank()) {
+            planRepository.findByNamePlanIgnoreCase(name).ifPresent(plans::add);
+        }
+        if (hours > 0) {
+            plans.addAll(planRepository.findByHoursEnabled(hours));
+        }
+        if (days > 0) {
+            plans.addAll(planRepository.findByDaysEnabled(days));
+        }
+        if (cost != null && cost.compareTo(BigDecimal.ZERO) != 0) {
+            plans.addAll(planRepository.findByValue(cost));
+        }
+        return plans.stream().map(PlanMapper::toDTO).collect(Collectors.toList());
     }
 
     public void save(Plan plan) {

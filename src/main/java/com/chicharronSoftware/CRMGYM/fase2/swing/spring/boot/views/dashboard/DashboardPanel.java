@@ -1,7 +1,6 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.dashboard;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Payment;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.VectorIcon;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.MainFrame;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.DashboardTable;

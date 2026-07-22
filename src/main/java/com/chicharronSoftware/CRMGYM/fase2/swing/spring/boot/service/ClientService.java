@@ -3,7 +3,9 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.ClientDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.ClientMapper;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Plan;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.ClientRepository;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 public class ClientService {
 
     private final ClientRepository clientRepository;
+    private final PlanRepository planRepository;
     private final HistoricalPlanService historicalPlanService;
 
     /**
@@ -129,5 +132,63 @@ public class ClientService {
 
     public List<Client> findByCurrentPlan(String namePlan) {
         return clientRepository.findByCurrentPlan_NamePlan(namePlan);
+    }
+
+    /**
+     * [MEJORA JUNIOR] Guarda o actualiza un socio directamente desde su objeto DTO.
+     * Resuelve internamente la relación con el Plan sin exponer la entidad a la UI.
+     */
+    public ClientDTO saveDTO(ClientDTO dto) {
+        Plan plan = null;
+        if (dto.getNamePlan() != null && !dto.getNamePlan().isBlank()) {
+            plan = planRepository.findByNamePlanIgnoreCase(dto.getNamePlan()).orElse(null);
+        }
+        Client client = ClientMapper.toEntity(dto, null);
+        client.setCurrentPlan(plan);
+        save(client);
+        return ClientMapper.toDTO(client);
+    }
+
+    /**
+     * [MEJORA JUNIOR] Modifica el estado activo/inactivo de un socio por su DNI.
+     */
+    public boolean changeStatusDTO(Integer documentId, boolean status) {
+        Optional<Client> clientOpt = clientRepository.findByDocumentId(documentId);
+        if (clientOpt.isPresent()) {
+            Client client = clientOpt.get();
+            client.setIsActive(status);
+            save(client);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * [MEJORA JUNIOR] Realiza búsquedas combinadas de socios por campos y retorna una lista de DTOs.
+     */
+    public List<ClientDTO> searchClientsDTO(String name, String lastName, String dniText, String phone, String email, String selectedPlan) {
+        java.util.Set<Client> clients = new java.util.HashSet<>();
+        if (name != null && !name.isBlank()) {
+            clients.addAll(clientRepository.findByNameIgnoreCase(name));
+        }
+        if (lastName != null && !lastName.isBlank()) {
+            clients.addAll(clientRepository.findByLastNameIgnoreCase(lastName));
+        }
+        if (dniText != null && !dniText.isBlank()) {
+            try {
+                int dni = Integer.parseInt(dniText.trim());
+                clientRepository.findByDocumentId(dni).ifPresent(clients::add);
+            } catch (NumberFormatException ignored) {}
+        }
+        if (phone != null && !phone.isBlank()) {
+            clients.addAll(clientRepository.findByPhoneNumber(phone));
+        }
+        if (email != null && !email.isBlank()) {
+            clients.addAll(clientRepository.findByEmail(email));
+        }
+        if (selectedPlan != null && !selectedPlan.isBlank() && !"Seleccione un Plan *".equals(selectedPlan)) {
+            clients.addAll(clientRepository.findByCurrentPlan_NamePlan(selectedPlan));
+        }
+        return clients.stream().map(ClientMapper::toDTO).collect(Collectors.toList());
     }
 }

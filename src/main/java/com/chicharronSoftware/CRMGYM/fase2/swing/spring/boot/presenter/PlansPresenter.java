@@ -1,8 +1,6 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.presenter;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PlanDTO;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PlanMapper;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Plan;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.PlanValidation;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.PlansPanel;
@@ -66,23 +64,23 @@ public class PlansPresenter {
             Integer selectedHours = (Integer) view.getSpinnerHours().getValue();
             Integer selectedDays = (Integer) view.getSpinnerDays().getValue();
 
-            final Plan plan;
-            if (view.isEditMode()) {
-                plan = new Plan(view.getEditingPlanId(), name, selectedDays, selectedHours, cost, notes, true);
-            } else {
-                plan = new Plan(name, selectedDays, selectedHours, cost, notes, true);
-            }
+            final PlanDTO planDTO = PlanDTO.builder()
+                    .idPlan(view.isEditMode() ? view.getEditingPlanId() : null)
+                    .namePlan(name)
+                    .daysEnabled(selectedDays)
+                    .hoursEnabled(selectedHours)
+                    .value(cost)
+                    .notes(notes)
+                    .status("Activo")
+                    .build();
 
             view.getBtnSave().setEnabled(false);
 
             com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.loadData(
-                () -> {
-                    planService.save(plan);
-                    return plan;
-                },
-                new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<Plan>() {
+                () -> planService.saveDTO(planDTO),
+                new com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.AsyncDataLoader.DataLoadCallback<PlanDTO>() {
                     @Override
-                    public void onSuccess(Plan savedPlan) {
+                    public void onSuccess(PlanDTO savedPlan) {
                         view.getBtnSave().setEnabled(true);
                         String msg = view.isEditMode() ? "Plan actualizado correctamente." : "Plan guardado correctamente.";
                         view.showSuccess(msg, "Éxito");
@@ -176,37 +174,21 @@ public class PlansPresenter {
     }
 
     private void onSearch() {
-        Set<Plan> plans = new HashSet<>();
-
         String name = view.getTxtName().getText().trim();
-        if (!name.isEmpty()) {
-            planService.findByNamePlanIgnoreCase(name).ifPresent(plans::add);
-        }
-
         int hours = (int) view.getSpinnerHours().getValue();
-        if (hours != 0) {
-            plans.addAll(planService.findByHoursEnabled(hours));
-        }
-
         int days = (int) view.getSpinnerDays().getValue();
-        if (days != 0) {
-            plans.addAll(planService.findByDaysEnabled(days));
-        }
-
+        
+        BigDecimal cost = BigDecimal.ZERO;
         String costText = view.getTxtCost().getText().trim();
         if (!costText.isEmpty()) {
             try {
-                BigDecimal cost = new BigDecimal(costText.replace(",", "."));
-                if (cost.compareTo(BigDecimal.ZERO) != 0) {
-                    plans.addAll(planService.findByValue(cost));
-                }
+                cost = new BigDecimal(costText.replace(",", "."));
             } catch (NumberFormatException ignored) {}
         }
 
+        final BigDecimal finalCost = cost;
         view.getTitleList().setText("Lista de Planes: Buscados");
-        loadPlansToTableAsync(() -> plans.stream()
-                .map(PlanMapper::toDTO)
-                .collect(Collectors.toList()));
+        loadPlansToTableAsync(() -> planService.searchPlansDTO(name, hours, days, finalCost));
     }
 
     private void onAll() {

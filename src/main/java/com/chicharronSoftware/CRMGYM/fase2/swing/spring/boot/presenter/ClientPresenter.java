@@ -2,9 +2,6 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.presenter;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.ClientDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PlanDTO;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.ClientMapper;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Plan;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations.ClientValidation;
@@ -80,6 +77,18 @@ public class ClientPresenter {
 
             view.getBtnSave().setEnabled(false);
 
+            final ClientDTO clientDTO = ClientDTO.builder()
+                    .documentId(dni)
+                    .name(name)
+                    .lastName(lastName)
+                    .email(email)
+                    .phoneNumber(phoneText.isEmpty() ? null : phoneText)
+                    .status("Activo")
+                    .namePlan(selectedPlanName)
+                    .build();
+
+            view.getBtnSave().setEnabled(false);
+
             AsyncDataLoader.loadData(
                 () -> {
                     if (!view.isEditMode() && !clientValidation.isDniAvailable(dni)) {
@@ -95,16 +104,11 @@ public class ClientPresenter {
                         throw new IllegalArgumentException("El número de celular ingresado no es válido.");
                     }
 
-                    Plan plan = planService.findByNamePlanIgnoreCase(selectedPlanName)
-                            .orElseThrow(() -> new IllegalArgumentException("No se encontró el plan seleccionado."));
-
-                    Client client = new Client(dni, name, lastName, email, phone, true, plan);
-                    clientService.save(client);
-                    return client;
+                    return clientService.saveDTO(clientDTO);
                 },
-                new AsyncDataLoader.DataLoadCallback<Client>() {
+                new AsyncDataLoader.DataLoadCallback<ClientDTO>() {
                     @Override
-                    public void onSuccess(Client savedClient) {
+                    public void onSuccess(ClientDTO savedClient) {
                         view.getBtnSave().setEnabled(true);
                         String msg = view.isEditMode() ? "Cliente actualizado correctamente." : "Cliente guardado correctamente.";
                         view.showSuccess(msg, "Éxito");
@@ -194,16 +198,7 @@ public class ClientPresenter {
         view.getBtnDeactivate().setEnabled(false);
 
         AsyncDataLoader.loadData(
-            () -> {
-                Optional<Client> clientOpt = clientService.findById(dni);
-                if (clientOpt.isPresent()) {
-                    Client client = clientOpt.get();
-                    client.setIsActive(status);
-                    clientService.save(client);
-                    return true;
-                }
-                return false;
-            },
+            () -> clientService.changeStatusDTO(dni, status),
             new AsyncDataLoader.DataLoadCallback<Boolean>() {
                 @Override
                 public void onSuccess(Boolean result) {
@@ -229,45 +224,15 @@ public class ClientPresenter {
     }
 
     private void onSearch() {
-        Set<Client> clients = new HashSet<>();
-
         String name = view.getTxtName().getText().trim();
-        if (!name.isEmpty()) {
-            clients.addAll(clientService.findByName(name));
-        }
-
         String lastName = view.getTxtLastName().getText().trim();
-        if (!lastName.isEmpty()) {
-            clients.addAll(clientService.findByLastName(lastName));
-        }
-
         String dniText = view.getTxtDni().getText().trim();
-        if (!dniText.isEmpty()) {
-            try {
-                int dni = Integer.parseInt(dniText);
-                clientService.findById(dni).ifPresent(clients::add);
-            } catch (NumberFormatException ignored) {}
-        }
-
         String phone = view.getTxtPhone().getText().trim();
-        if (!phone.isEmpty()) {
-            clients.addAll(clientService.findByPhoneNumber(phone));
-        }
-
         String email = view.getTxtMail().getText().trim();
-        if (!email.isEmpty()) {
-            clients.addAll(clientService.findByEmail(email));
-        }
-
-        if (view.getComboBoxPlan().getSelectedIndex() != 0) {
-            String selectedPlan = view.getComboBoxPlan().getSelectedItem().toString();
-            clients.addAll(clientService.findByCurrentPlan(selectedPlan));
-        }
+        String selectedPlan = (view.getComboBoxPlan().getSelectedIndex() != 0) ? view.getComboBoxPlan().getSelectedItem().toString() : null;
 
         view.getTitleList().setText("Lista de Clientes: Buscados");
-        loadClientsToTableAsync(() -> clients.stream()
-                .map(ClientMapper::toDTO)
-                .collect(Collectors.toList()));
+        loadClientsToTableAsync(() -> clientService.searchClientsDTO(name, lastName, dniText, phone, email, selectedPlan));
     }
 
     private boolean isFormValid() {
