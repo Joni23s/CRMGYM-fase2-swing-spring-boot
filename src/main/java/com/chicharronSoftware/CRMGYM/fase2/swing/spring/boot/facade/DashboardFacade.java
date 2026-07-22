@@ -3,67 +3,54 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.facade;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.DashboardDataDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Payment;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PaymentService;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.ClientRepository;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PaymentRepository;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * [MEJORA JUNIOR] Fachada para la recolección de métricas del Dashboard.
+ * Consolida consultas de agregación directas en la base de datos (COUNT, SUM, TOP-N)
+ * evitando traer listas enteras a la memoria RAM, lo que garantiza máxima velocidad y escalabilidad.
+ */
 @Component
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DashboardFacade {
 
-    private final ClientService clientService;
-    private final PaymentService paymentService;
-    private final PlanService planService;
+    private final ClientRepository clientRepository;
+    private final PaymentRepository paymentRepository;
+    private final PlanRepository planRepository;
 
     public DashboardDataDTO getDashboardData() {
-        // KPIs
-        long activeClients = clientService.findByIsActive(true).size();
-        long activePlans = planService.findByIsActiveDTO(true).size();
+        // [MEJORA JUNIOR] Consultas de agregación numéricas directas en BD
+        long activeClients = clientRepository.countByIsActive(true);
+        long activePlans = planRepository.countByIsActive(true);
+        BigDecimal totalRevenue = paymentRepository.sumTotalConfirmedRevenue();
 
-        List<Payment> allPayments = paymentService.findAll();
-        BigDecimal totalRevenue = allPayments.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.CONFIRMADO)
-                .map(Payment::getFinalAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Recent payments list (sorted and limited to 4)
-        List<PaymentDTO> paymentsDTO = paymentService.getAllPaymentsDTO();
-        List<PaymentDTO> recent = paymentsDTO.stream()
-                .sorted((p1, p2) -> {
-                    Long id1 = p1.getIdPayment();
-                    Long id2 = p2.getIdPayment();
-                    if (id1 == null && id2 == null) return 0;
-                    if (id1 == null) return 1;
-                    if (id2 == null) return -1;
-                    return Long.compare(id2, id1);
-                })
-                .limit(4)
-                .collect(Collectors.toList());
-
-        // Pending/expired payments for Upcoming Expirations
-        List<PaymentDTO> pending = allPayments.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.PENDIENTE || p.getPaymentStatus() == PaymentStatus.VENCIDO)
-                .sorted(java.util.Comparator.comparing(Payment::getPeriod))
-                .limit(3)
+        // Lista de pagos recientes (últimos 4 por ID descendente)
+        List<PaymentDTO> recent = paymentRepository.findTop4ByOrderByIdDesc()
+                .stream()
                 .map(PaymentMapper::toDTO)
                 .collect(Collectors.toList());
 
-        // Recent payments list for Activity panel (sorted by ID descending, limit 4)
-        List<PaymentDTO> recentPays = allPayments.stream()
-                .sorted((p1, p2) -> p2.getId().compareTo(p1.getId()))
-                .limit(4)
+        // Pagos pendientes o vencidos (primeros 3 ordenados por período)
+        List<PaymentDTO> pending = paymentRepository.findTop3ByPaymentStatusInOrderByPeriodAsc(
+                        Arrays.asList(PaymentStatus.PENDIENTE, PaymentStatus.VENCIDO))
+                .stream()
                 .map(PaymentMapper::toDTO)
                 .collect(Collectors.toList());
+
+        // Lista de actividad reciente
+        List<PaymentDTO> recentPays = recent;
 
         return new DashboardDataDTO(activeClients, activePlans, totalRevenue, recent, pending, recentPays);
     }

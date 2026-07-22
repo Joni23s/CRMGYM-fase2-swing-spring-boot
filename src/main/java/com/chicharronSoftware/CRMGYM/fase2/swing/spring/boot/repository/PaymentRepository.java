@@ -39,6 +39,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
     Optional<Payment> findTopByClient_DocumentIdOrderByPaymentDateDesc(Integer clientId);
 
+    @Query("SELECT COALESCE(SUM(p.finalAmount), 0) FROM Payment p WHERE p.paymentStatus = com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus.CONFIRMADO")
+    java.math.BigDecimal sumTotalConfirmedRevenue();
+
+    @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
+    List<Payment> findTop4ByOrderByIdDesc();
+
+    @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
+    List<Payment> findTop3ByPaymentStatusInOrderByPeriodAsc(List<PaymentStatus> paymentStatuses);
+
     /**
      * [MEJORA JUNIOR] Actualización masiva en lote (Bulk Update).
      * Modifica el estado de los pagos vencidos directamente en el motor SQL sin cargarlos en memoria.

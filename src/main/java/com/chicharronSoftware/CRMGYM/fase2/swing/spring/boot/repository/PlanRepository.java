@@ -12,7 +12,9 @@ import java.util.Optional;
 public interface PlanRepository extends JpaRepository<Plan, Integer> {
 
     Optional<Plan> findByNamePlanIgnoreCase(String namePlan);
+    boolean existsByNamePlanIgnoreCase(String namePlan);
     List<Plan> findByIsActive(boolean isActive);
+    long countByIsActive(boolean isActive);
     Optional<Plan> findById(int id);
     List<Plan> findByHoursEnabled(int hours);
     List<Plan> findByDaysEnabled(int days);

@@ -2,7 +2,6 @@ package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.dashboard;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.VectorIcon;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.MainFrame;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.DashboardTable;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.MetricCard;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
@@ -28,6 +27,18 @@ public class DashboardPanel extends JPanel implements Scrollable {
     private static final int BP_MEDIUM = 650;
 
     private enum LayoutMode { LARGE, MEDIUM, SMALL }
+
+    public interface DashboardNavigationListener {
+        void onNavigateToClients();
+        void onNavigateToPayments();
+        void onNavigateToHistory();
+    }
+
+    private DashboardNavigationListener navigationListener;
+
+    public void setNavigationListener(DashboardNavigationListener navigationListener) {
+        this.navigationListener = navigationListener;
+    }
 
     private DashboardTable     tableRecentPayments;
     private DefaultTableModel  tableModel;
@@ -261,16 +272,13 @@ public class DashboardPanel extends JPanel implements Scrollable {
         buttonFactory.styleToolActionButton(btnViewHistory);
 
         btnRegisterSocio.addActionListener(e -> {
-            MainFrame mainFrame = (MainFrame) SwingUtilities.getWindowAncestor(this);
-            if (mainFrame != null) mainFrame.selectClientsPanel();
+            if (navigationListener != null) navigationListener.onNavigateToClients();
         });
         btnCobrar.addActionListener(e -> {
-            MainFrame mainFrame = (MainFrame) SwingUtilities.getWindowAncestor(this);
-            if (mainFrame != null) mainFrame.selectPaymentsPanel();
+            if (navigationListener != null) navigationListener.onNavigateToPayments();
         });
         btnViewHistory.addActionListener(e -> {
-            MainFrame mainFrame = (MainFrame) SwingUtilities.getWindowAncestor(this);
-            if (mainFrame != null) mainFrame.selectHistoryPanel();
+            if (navigationListener != null) navigationListener.onNavigateToHistory();
         });
 
         bottomActionsCard.add(btnRegisterSocio, "align center");

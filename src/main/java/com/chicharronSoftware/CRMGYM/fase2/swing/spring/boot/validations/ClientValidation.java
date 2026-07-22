@@ -1,31 +1,36 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations;
 
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.ClientService;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.ClientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+/**
+ * [MEJORA JUNIOR] Validador de socios.
+ * Inyecta ClientRepository (capa inferior) en lugar de ClientService (capa superior)
+ * para respetar la direccionalidad estricta de la arquitectura por capas.
+ */
 @Component
 public class ClientValidation {
-    private final ClientService clientService;
+    private final ClientRepository clientRepository;
     private final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
     private final Pattern PHONE_PATTERN = Pattern.compile("^\\+?\\d{7,15}$");
     private final Pattern NAME_PATTERN = Pattern.compile("^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?: [A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$");
 
     @Autowired
-    public ClientValidation(ClientService clientService) {
-        this.clientService = clientService;
+    public ClientValidation(ClientRepository clientRepository) {
+        this.clientRepository = clientRepository;
     }
 
     public boolean isDniAvailable(Integer dni) {
-        return clientService.findById(dni).isEmpty();
+        return !clientRepository.existsByDocumentId(dni);
     }
 
     public boolean isDniAvailable(Integer dni, Client editingClient) {
-        Optional<Client> existing = clientService.findById(dni);
+        Optional<Client> existing = clientRepository.findByDocumentId(dni);
         return existing.isEmpty() || existing.get().getDocumentId().equals(editingClient.getDocumentId());
     }
 

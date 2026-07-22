@@ -195,9 +195,7 @@ public class PaymentPresenter {
 
         AsyncDataLoader.loadData(
             () -> {
-                ClientDTO client = clientService.getAllClientsDTO().stream()
-                        .filter(c -> c.getDocumentId() == dniNumber)
-                        .findFirst()
+                ClientDTO client = clientService.findByDocumentIdDTO(dniNumber)
                         .orElseThrow(() -> new IllegalArgumentException("No se encontró un cliente con ese DNI."));
                 PaymentDTO lastPayment = paymentService.findLastPaymentByClientIdDTO(client.getDocumentId()).orElse(null);
                 List<PaymentDTO> payments = paymentService.findByClientDocumentIdDTO(client.getDocumentId());

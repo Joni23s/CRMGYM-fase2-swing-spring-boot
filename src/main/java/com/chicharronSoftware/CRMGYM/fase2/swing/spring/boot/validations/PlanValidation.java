@@ -1,24 +1,30 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.validations;
 
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service.PlanService;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PlanRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+
+/**
+ * [MEJORA JUNIOR] Validador de planes.
+ * Inyecta PlanRepository (capa inferior) en lugar de PlanService (capa superior)
+ * para mantener la direccionalidad descendente entre capas de arquitectura.
+ */
 @Component
 public class PlanValidation {
-    private final PlanService planService;
+    private final PlanRepository planRepository;
 
     @Autowired
-    public PlanValidation(PlanService planService) {
-        this.planService = planService;
+    public PlanValidation(PlanRepository planRepository) {
+        this.planRepository = planRepository;
     }
 
     public boolean isValidName(String name) {
         if (name == null || name.trim().isEmpty()) {
             return false;
         }
-        return planService.findByNamePlanIgnoreCase(name.trim()).isEmpty();
+        return planRepository.findByNamePlanIgnoreCase(name.trim()).isEmpty();
     }
 
     public boolean isValidNameForUpdate(Long planId, String newName) {
@@ -26,9 +32,9 @@ public class PlanValidation {
             return false;
         }
 
-        return planService.findByNamePlanIgnoreCase(newName.trim())
-                .map(existingPlan -> existingPlan.getIdPlan().equals(planId)) // Si es el mismo plan, es válido
-                .orElse(true); // Si no existe ningún plan con ese nombre, es válido
+        return planRepository.findByNamePlanIgnoreCase(newName.trim())
+                .map(existingPlan -> existingPlan.getIdPlan().equals(planId.intValue()))
+                .orElse(true);
     }
 
     //Entendiendo que el gimnasio pueda abrir los 7 días de la semana

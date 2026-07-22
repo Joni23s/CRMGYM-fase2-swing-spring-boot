@@ -50,6 +50,10 @@ public class ClientService {
         return clientRepository.findByDocumentId(documentId);
     }
 
+    public Optional<ClientDTO> findByDocumentIdDTO(Integer documentId) {
+        return clientRepository.findByDocumentId(documentId).map(ClientMapper::toDTO);
+    }
+
     /**
      * [MEJORA JUNIOR] Busca a un socio por su ID surrogate autogenerado en BD.
      */
@@ -190,5 +194,28 @@ public class ClientService {
             clients.addAll(clientRepository.findByCurrentPlan_NamePlan(selectedPlan));
         }
         return clients.stream().map(ClientMapper::toDTO).collect(Collectors.toList());
+    }
+
+    /**
+     * [MEJORA JUNIOR] Reacciona cuando un plan es desactivado en el sistema.
+     * Escucha el evento desacoplado 'PlanDeactivatedEvent', busca a todos los clientes del plan
+     * desactivado, cierra su historial y los migra al plan por defecto 'Sin Plan'.
+     */
+    @org.springframework.context.event.EventListener
+    public void handlePlanDeactivated(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.event.PlanDeactivatedEvent event) {
+        String planName = event.getPlanName();
+        List<Client> clients = findByCurrentPlan(planName);
+        if (clients.isEmpty()) {
+            return;
+        }
+
+        Plan noPlan = planRepository.findByNamePlanIgnoreCase("Sin Plan").orElse(null);
+        if (noPlan == null) return;
+
+        for (Client client : clients) {
+            historicalPlanService.closeCurrentPlan(client);
+            client.setCurrentPlan(noPlan);
+            save(client);
+        }
     }
 }

@@ -37,6 +37,8 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
     @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findByIsActive(boolean isActive);
 
+    long countByIsActive(boolean isActive);
+
     @EntityGraph(attributePaths = { "currentPlan" })
     List<Client> findByPhoneNumber(String phone);
 

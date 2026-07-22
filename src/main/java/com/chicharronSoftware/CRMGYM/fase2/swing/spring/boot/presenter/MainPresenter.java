@@ -54,6 +54,15 @@ public class MainPresenter {
         // Wire mainFrame's helper methods to presenter's router
         mainFrame.setNavigationListener(this::navigateTo);
 
+        dashboardPanel.setNavigationListener(new DashboardPanel.DashboardNavigationListener() {
+            @Override
+            public void onNavigateToClients() { navigateTo("Socios"); }
+            @Override
+            public void onNavigateToPayments() { navigateTo("Pagos"); }
+            @Override
+            public void onNavigateToHistory() { navigateTo("Historial"); }
+        });
+
         // Bind clicks from sidebar
         sidebarPanel.addNavigationListener("Inicio", e -> navigateTo("Inicio"));
         sidebarPanel.addNavigationListener("Socios", e -> navigateTo("Socios"));
