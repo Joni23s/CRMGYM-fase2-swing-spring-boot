@@ -68,54 +68,56 @@ public final class Theme {
      * alto contraste accesible según normas WCAG.
      */
 
-    // Colores de Fondo (Backgrounds)
-    public static final Color BG_DARK = new Color(0x090D16);       // Fondo principal ultra oscuro de la aplicación
-    public static final Color CARD_BG = new Color(0x1E293B);       // Fondo de tarjetas y paneles contenedores
-    public static final Color CARD_BG_ALT = new Color(0x151F32);   // Fondo alternativo/secundario para contraste interno
-    public static final Color BTN_ACTIVE_BG = new Color(0x1E293B); // Fondo para botones activos de navegación/sidebar
+    // Colores de Fondo (Backgrounds - Papel Envejecido)
+    public static final Color BG_DARK = Color.decode("#EFE3C8");       // Fondo principal papel envejecido
+    public static final Color CARD_BG = Color.decode("#F5EDDA");       // Fondo de tarjetas y paneles contenedores
+    public static final Color CARD_BG_ALT = Color.decode("#EADFC8");   // Fondo alternativo/secundario
+    public static final Color BTN_ACTIVE_BG = Color.decode("#8C2320"); // Fondo para botones activos (Rojo sangre de toro)
 
-    // Bordes y Rejillas (Borders & Grids)
-    public static final Color BORDER_SLATE = new Color(0x334155);  // Bordes sutiles para delimitar componentes oscuros
+    // Bordes y Rejillas (Tinta Oscura)
+    public static final Color BORDER_SLATE = Color.decode("#211B15");  // Bordes de tinta recta 1px
 
-    // Jerarquía de Texto (Text Hierarchy)
-    public static final Color TEXT_ACTIVE = new Color(0xF8FAFC);    // Texto primario, altamente legible y luminoso
-    public static final Color TEXT_INACTIVE = new Color(0x94A3B8);  // Texto secundario o deshabilitado, reduce ruido visual
+    // Jerarquía de Texto (Tinta Oscura & Subtonos)
+    public static final Color TEXT_ACTIVE = Color.decode("#211B15");    // Texto primario tinta negra/marrón
+    public static final Color TEXT_INACTIVE = Color.decode("#5C4E43");  // Texto secundario
 
-    // Acentos de Marca (Brand Accents)
-    public static final Color ACCENT_CYAN = new Color(0x06B6D4);    // Acento cian brillante para interacción primaria o resaltados
-    public static final Color ACCENT_BLUE = new Color(0x3B82F6);    // Azul corporativo para botones estándar y enlaces
+    // Acentos del Sistema Vintage
+    public static final Color ACCENT_OXBLOOD = Color.decode("#8C2320");   // Rojo sangre de toro (Primario)
+    public static final Color ACCENT_MUSTARD = Color.decode("#C68A1E");   // Mostaza decorativo (Solo líneas/ornamentos)
+    public static final Color TEXT_MUSTARD = Color.decode("#8C5E12");     // Mostaza legible para texto
+    public static final Color ACCENT_SLATE_BLUE = Color.decode("#2E4057");// Azul apagado (Uso puntual en avatares)
 
-    // Estado Semántico (Semantic Status / Badges)
-    public static final Color STATUS_SUCCESS = new Color(0x10B981); // Verde esmeralda para operaciones exitosas y activos
-    public static final Color STATUS_WARNING = new Color(0xF97316); // Naranja para advertencias o estados pendientes
-    public static final Color STATUS_ERROR = new Color(0xEF4444);   // Rojo brillante para errores, alertas y cancelaciones
+    // Acentos legacy mapeados a la nueva paleta
+    public static final Color ACCENT_CYAN = ACCENT_OXBLOOD;
+    public static final Color ACCENT_BLUE = ACCENT_SLATE_BLUE;
 
-    /* 
-     * =============================================================================
-     * 2. TOKENS DE TIPOGRAFÍA (ESTRUCTURA SEGOE UI)
-     * =============================================================================
-     * Pre-instanciamos las tipografías para evitar re-crear e interpretar los mapas
-     * vectoriales de la fuente en tiempo de renderizado, optimizando los ciclos del EDT.
-     */
-    public static final Font FONT_DASHBOARD_TITLE = new Font("Segoe UI", Font.BOLD, 24);
-    public static final Font FONT_SECTION_TITLE   = new Font("Segoe UI", Font.BOLD, 16);
-    public static final Font FONT_CARD_TITLE      = new Font("Segoe UI", Font.BOLD, 13);
-    public static final Font FONT_BODY            = new Font("Segoe UI", Font.PLAIN, 13);
-    public static final Font FONT_MONO            = new Font("Consolas", Font.BOLD, 13); // Ideal para datos financieros/monetarios por su ancho monoespaciado uniforme
-    public static final Font FONT_FOOTER          = new Font("Segoe UI", Font.BOLD, 11);
+    // Estado Semántico (Sello de Tinta)
+    public static final Color STATUS_SUCCESS = TEXT_ACTIVE;    // Confirmado en Tinta
+    public static final Color STATUS_WARNING = TEXT_MUSTARD;   // Pendiente en Mostaza legible
+    public static final Color STATUS_ERROR = ACCENT_OXBLOOD;   // Vencido/Error en Sangre de Toro
 
     /* 
      * =============================================================================
-     * 3. TOKENS DE GEOMETRÍA Y ESPACIADO
+     * 2. TOKENS DE TIPOGRAFÍA (ESTILO EDITORIAL VINTAGE POS)
      * =============================================================================
-     * Constantes numéricas para garantizar consistencia estructural en la distribución
-     * de cajas, paddings, gaps de layouts y curvaturas de esquinas redondeadas.
+     */
+    public static final Font FONT_DASHBOARD_TITLE = new Font("Bevan", Font.BOLD, 22);
+    public static final Font FONT_SECTION_TITLE   = new Font("Oswald", Font.BOLD, 15);
+    public static final Font FONT_CARD_TITLE      = new Font("Oswald", Font.BOLD, 13);
+    public static final Font FONT_BODY            = new Font("Courier Prime", Font.PLAIN, 13);
+    public static final Font FONT_MONO            = new Font("Courier Prime", Font.BOLD, 13);
+    public static final Font FONT_FOOTER          = new Font("Oswald", Font.BOLD, 11);
+
+    /* 
+     * =============================================================================
+     * 3. TOKENS DE GEOMETRÍA Y ESPACIADO (ARC 0 - BORDES RECTOS 1PX)
+     * =============================================================================
      */
 
-    // Radios de Esquinas Redondeadas (Arcs)
-    public static final int ARC_CARD = 20;     // Suavizado premium para tarjetas de información
-    public static final int ARC_BUTTON = 10;   // Curvatura óptima para botones táctiles/interactivos
-    public static final int ARC_CAPSULE = 16;  // Curvatura tipo píldora para tags, etiquetas y badges
+    // Radios de Esquinas Redondeadas (Arc = 0 para estilo vintage plano)
+    public static final int ARC_CARD = 0;
+    public static final int ARC_BUTTON = 0;
+    public static final int ARC_CAPSULE = 0;
 
     // Escala Estricta de Márgenes e Intervalos (Layout Paddings/Gaps)
     public static final int GAP_XS = 4;
@@ -125,23 +127,22 @@ public final class Theme {
     public static final int GAP_XL = 24;
     public static final int GAP_XXL = 32;
 
-    // [MEJORA JUNIOR] Nuevos tokens añadidos para la Fase 2
-    // Bordes y radios (Nuevos)
-    public static final int BORDER_RADIUS_SM = 10;
-    public static final int BORDER_RADIUS_MD = 16;
-    public static final int BORDER_RADIUS_LG = 20;
+    // Bordes y radios
+    public static final int BORDER_RADIUS_SM = 0;
+    public static final int BORDER_RADIUS_MD = 0;
+    public static final int BORDER_RADIUS_LG = 0;
 
-    // Márgenes y paddings (Nuevos alias para estandarización)
+    // Márgenes y paddings
     public static final int SPACING_XS = 4;
     public static final int SPACING_SM = 8;
     public static final int SPACING_MD = 12;
     public static final int SPACING_LG = 16;
 
     // Botones específicos
-    public static final Color BTN_PRIMARY_BG = ACCENT_CYAN; // Manteniendo el turquesa usado como primary
+    public static final Color BTN_PRIMARY_BG = ACCENT_OXBLOOD;
     public static final Color BTN_PRIMARY_FG = Color.WHITE;
     public static final Color BTN_SECONDARY_BG = CARD_BG;
-    public static final Color BTN_SECONDARY_FG = TEXT_INACTIVE;
+    public static final Color BTN_SECONDARY_FG = TEXT_ACTIVE;
 
     /* 
      * =============================================================================

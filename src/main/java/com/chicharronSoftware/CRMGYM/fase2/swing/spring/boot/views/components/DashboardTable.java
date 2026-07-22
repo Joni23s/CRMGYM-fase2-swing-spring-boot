@@ -178,13 +178,13 @@ public class DashboardTable extends JTable {
             }
             initials = init;
 
-            // Color semántico según las iniciales del mockup
+            // Color semántico según las iniciales (Paleta Vintage: Tinta, Oxblood, Azul Apagado, Mostaza)
             switch (initials) {
-                case "MG": badgeBg = Color.decode("#2563eb"); break;
-                case "JA": badgeBg = Color.decode("#8b5cf6"); break;
-                case "MO": badgeBg = Color.decode("#10b981"); break;
-                case "CL": badgeBg = Color.decode("#eab308"); break;
-                default:   badgeBg = Color.decode("#64748b"); break;
+                case "MG": badgeBg = Color.decode("#211B15"); break;
+                case "JA": badgeBg = Color.decode("#8C2320"); break;
+                case "MO": badgeBg = Color.decode("#2E4057"); break;
+                case "CL": badgeBg = Color.decode("#C68A1E"); break;
+                default:   badgeBg = Color.decode("#5C4E43"); break;
             }
 
             cellBg = isSelected ? table.getSelectionBackground()
@@ -209,16 +209,16 @@ public class DashboardTable extends JTable {
             g2.setColor(badgeBg);
             g2.fillOval(BADGE_LEFT, cy, BADGE_SIZE, BADGE_SIZE);
 
-            // Iniciales centradas en el círculo
-            g2.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            // Iniciales centradas en el círculo (Oswald)
+            g2.setFont(new Font("Oswald", Font.BOLD, 11));
             g2.setColor(Color.WHITE);
             FontMetrics fm = g2.getFontMetrics();
             int tx = BADGE_LEFT + (BADGE_SIZE - fm.stringWidth(initials)) / 2;
             int ty = cy + (BADGE_SIZE - fm.getHeight()) / 2 + fm.getAscent();
             g2.drawString(initials, tx, ty);
 
-            // Nombre del cliente
-            g2.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            // Nombre del cliente (Courier Prime)
+            g2.setFont(new Font("Courier Prime", Font.BOLD, 13));
             g2.setColor(Theme.TEXT_ACTIVE);
             FontMetrics fmName = g2.getFontMetrics();
             int nameY = (getHeight() - fmName.getHeight()) / 2 + fmName.getAscent();

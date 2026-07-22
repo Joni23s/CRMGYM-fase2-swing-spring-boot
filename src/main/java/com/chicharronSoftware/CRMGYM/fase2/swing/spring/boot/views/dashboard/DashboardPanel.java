@@ -17,12 +17,10 @@ import java.awt.event.KeyEvent;
 import java.util.List;
 
 /**
- * [MEJORA JUNIOR] Pantalla de Inicio (Dashboard Operativo POS).
- * Rediseñada bajo el concepto de software de escritorio para personal de recepción:
- * - Header Superior con Buscador Exprés por DNI y Botones de Acción Primarios.
- * - Tarjetas KPI simplificadas (Socios Activos y Recaudación Total).
- * - Grilla Principal con Registro de Pagos Recientes, Próximos Vencimientos (acciones directas)
- *   y Arqueo de Caja del Día desglosado.
+ * [MEJORA EDITORIAL VINTAGE] Pantalla de Inicio (Dashboard POS Vintage).
+ * - Tono Papel Envejecido (#EFE3C8), Tinta (#211B15), Rojo Sangre de Toro (#8C2320).
+ * - Layout optimizado sin espacios verticales vacíos sobrantes en la columna derecha.
+ * - Sin emojis Unicode corruptos.
  */
 @Component
 public class DashboardPanel extends JPanel implements Scrollable {
@@ -71,17 +69,17 @@ public class DashboardPanel extends JPanel implements Scrollable {
     private void initComponentsHandCoded() {
         setOpaque(true);
         setBackground(Theme.BG_DARK);
-        setLayout(new MigLayout("wrap 1, ins 20, fill", "[grow]", "[pref][pref][grow]"));
+        setLayout(new MigLayout("wrap 1, ins 16, fill", "[grow]", "[pref][pref][grow]"));
 
         // =====================================================================
-        // 1. HEADER OPERATIVO (BUSCADOR EXPRÉS + BOTONES PRIMARIOS)
+        // 1. HEADER OPERATIVO (BUSCADOR EXPRÉS + BOTONES PLANOS VINTAGE)
         // =====================================================================
-        JPanel topHeaderPanel = CardFactory.createCardPanel(new MigLayout("ins 12 18 12 18, fillx", "[grow]20[pref]10[pref]", "[center]"));
+        JPanel topHeaderPanel = CardFactory.createCardPanel(new MigLayout("ins 10 14 10 14, fillx", "[grow]14[pref]8[pref]", "[center]"));
 
-        // Buscador por DNI o Nombre
+        // Buscador por DNI o Nombre (Sin emojis corruptos)
         txtQuickSearchDni = new JTextField();
-        txtQuickSearchDni.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        txtQuickSearchDni.putClientProperty("JTextField.placeholderText", "🔍 Buscar socio por DNI o Nombre (Presione Enter)...");
+        txtQuickSearchDni.setFont(new Font("Courier Prime", Font.PLAIN, 13));
+        txtQuickSearchDni.putClientProperty("JTextField.placeholderText", "Buscar socio por DNI o Nombre (Presione Enter)...");
         txtQuickSearchDni.putClientProperty("JTextField.selectAllOnFocus", true);
         txtQuickSearchDni.addKeyListener(new KeyAdapter() {
             @Override
@@ -95,10 +93,10 @@ public class DashboardPanel extends JPanel implements Scrollable {
             }
         });
 
-        // Botón Cobrar Cuota (Verde Esmeralda Operativo)
-        btnQuickPay = new JButton("💳 Cobrar Cuota");
-        btnQuickPay.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnQuickPay.setBackground(Color.decode("#059669"));
+        // Botón Cobrar Cuota (Sangre de Toro / Arc = 0)
+        btnQuickPay = new JButton("Cobrar Cuota");
+        btnQuickPay.setFont(new Font("Oswald", Font.BOLD, 12));
+        btnQuickPay.setBackground(Color.decode("#8C2320"));
         btnQuickPay.setForeground(Color.WHITE);
         btnQuickPay.setFocusPainted(false);
         btnQuickPay.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -106,10 +104,10 @@ public class DashboardPanel extends JPanel implements Scrollable {
             if (navigationListener != null) navigationListener.onNavigateToPayments();
         });
 
-        // Botón Nuevo Socio (Azul Corporativo)
+        // Botón Nuevo Socio (Tinta / Arc = 0)
         btnQuickNewClient = new JButton("+ Nuevo Socio");
-        btnQuickNewClient.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnQuickNewClient.setBackground(Color.decode("#2563eb"));
+        btnQuickNewClient.setFont(new Font("Oswald", Font.BOLD, 12));
+        btnQuickNewClient.setBackground(Color.decode("#211B15"));
         btnQuickNewClient.setForeground(Color.WHITE);
         btnQuickNewClient.setFocusPainted(false);
         btnQuickNewClient.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -118,15 +116,15 @@ public class DashboardPanel extends JPanel implements Scrollable {
         });
 
         topHeaderPanel.add(txtQuickSearchDni, "growx");
-        topHeaderPanel.add(btnQuickPay, "h 36!");
-        topHeaderPanel.add(btnQuickNewClient, "h 36!");
+        topHeaderPanel.add(btnQuickPay, "h 34!");
+        topHeaderPanel.add(btnQuickNewClient, "h 34!");
 
-        add(topHeaderPanel, "growx, gapbottom 14");
+        add(topHeaderPanel, "growx, gapbottom 12");
 
         // =====================================================================
-        // 2. SECCIÓN DE MÉTRICAS KPI (2 TARJETAS SIMPLIFICADAS Y CLARAS)
+        // 2. SECCIÓN DE MÉTRICAS KPI (TARJETAS PLANAS PAPEL ENVEJECIDO)
         // =====================================================================
-        JPanel kpiRow = new JPanel(new MigLayout("ins 0, fill, gapx 14", "[grow][grow]", "[pref]"));
+        JPanel kpiRow = new JPanel(new MigLayout("ins 0, fill, gapx 12", "[grow][grow]", "[pref]"));
         kpiRow.setOpaque(false);
 
         cardClients = new MetricCard(
@@ -134,7 +132,7 @@ public class DashboardPanel extends JPanel implements Scrollable {
                 "0",
                 "Socios vigentes en el gimnasio",
                 "users",
-                Theme.STATUS_SUCCESS,
+                Theme.TEXT_INACTIVE,
                 false,
                 null);
 
@@ -143,19 +141,19 @@ public class DashboardPanel extends JPanel implements Scrollable {
                 "$ 0,00",
                 "Ingresos acumulados confirmados",
                 "dollar-sign",
-                Theme.ACCENT_CYAN,
+                Theme.TEXT_INACTIVE,
                 false,
                 null);
 
         kpiRow.add(cardClients, "grow");
         kpiRow.add(cardRevenue, "grow");
 
-        add(kpiRow, "growx, gapbottom 14");
+        add(kpiRow, "growx, gapbottom 12");
 
         // =====================================================================
-        // 3. GRILLA PRINCIPAL (65% REGISTRO DE PAGOS / 35% VENCIMIENTOS Y CAJA)
+        // 3. GRILLA PRINCIPAL (TABLA 65% / VENCIMIENTOS Y CAJA 35% FIT CONTENT)
         // =====================================================================
-        JPanel splitGrid = new JPanel(new MigLayout("ins 0, fill", "[65%, grow]14[35%, grow]", "[grow]"));
+        JPanel splitGrid = new JPanel(new MigLayout("ins 0, fill", "[65%, grow]12[35%, grow]", "[grow]"));
         splitGrid.setOpaque(false);
 
         // Tabla de Registro Reciente de Pagos
@@ -167,18 +165,18 @@ public class DashboardPanel extends JPanel implements Scrollable {
         };
         tableRecentPayments = new DashboardTable(tableModel);
 
-        JPanel tableCard = CardFactory.createCardPanel(new MigLayout("wrap 1, ins 18 20 18 20, fill", "[grow]", "[]12[grow]"));
+        JPanel tableCard = CardFactory.createCardPanel(new MigLayout("wrap 1, ins 14 16 14 16, fill", "[grow]", "[]10[grow]"));
 
         JPanel tableHeaderPanel = new JPanel(new MigLayout("ins 0, fillx", "[grow]push[]"));
         tableHeaderPanel.setOpaque(false);
 
-        JLabel lblTableTitle = new JLabel("Registro Reciente de Pagos");
-        lblTableTitle.setFont(Theme.FONT_SECTION_TITLE);
-        lblTableTitle.setForeground(Theme.TEXT_ACTIVE);
+        JLabel lblTableTitle = new JLabel("REGISTRO RECIENTE DE PAGOS");
+        lblTableTitle.setFont(new Font("Oswald", Font.BOLD, 14));
+        lblTableTitle.setForeground(Color.decode("#8C2320")); // Oxblood
         tableHeaderPanel.add(lblTableTitle, "left");
 
-        JLabel lblVerHistorial = new JLabel("Ver historial completo");
-        lblVerHistorial.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        JLabel lblVerHistorial = new JLabel("Ver historial completo ->");
+        lblVerHistorial.setFont(new Font("Oswald", Font.BOLD, 11));
         lblVerHistorial.setForeground(Theme.TEXT_INACTIVE);
         lblVerHistorial.setCursor(new Cursor(Cursor.HAND_CURSOR));
         lblVerHistorial.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -192,24 +190,24 @@ public class DashboardPanel extends JPanel implements Scrollable {
         tableCard.add(tableHeaderPanel, "growx");
 
         JScrollPane scrollTable = new JScrollPane(tableRecentPayments);
-        scrollTable.setBorder(BorderFactory.createEmptyBorder());
+        scrollTable.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.BORDER_SLATE));
         scrollTable.setOpaque(false);
         scrollTable.getViewport().setOpaque(false);
         tableCard.add(scrollTable, "grow");
 
         splitGrid.add(tableCard, "grow");
 
-        // Columna Derecha (Vencimientos + Arqueo de Caja)
-        JPanel rightColumnPanel = new JPanel(new MigLayout("wrap 1, ins 0, gapy 14, fill", "[grow]", "[grow][pref]"));
+        // Columna Derecha (Ajustada dinámicamente a la altura de su contenido [pref])
+        JPanel rightColumnPanel = new JPanel(new MigLayout("wrap 1, ins 0, gapy 12, fillx", "[grow]", "[pref][pref]"));
         rightColumnPanel.setOpaque(false);
 
         expirationsPanel = new UpcomingExpirationsPanel();
         cashDeskPanel = new CashDeskSummaryPanel();
 
-        rightColumnPanel.add(expirationsPanel, "grow");
+        rightColumnPanel.add(expirationsPanel, "growx");
         rightColumnPanel.add(cashDeskPanel, "growx");
 
-        splitGrid.add(rightColumnPanel, "grow");
+        splitGrid.add(rightColumnPanel, "growx, aligny top");
 
         add(splitGrid, "grow");
     }
