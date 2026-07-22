@@ -1,10 +1,7 @@
 package com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.service;
 
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.ClientDTO;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.dto.PaymentDTO;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.ClientMapper;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.mappers.PaymentMapper;
-import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Client;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.Payment;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.PaymentRepository;
@@ -12,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +24,6 @@ import java.util.stream.Collectors;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.repository.ClientRepository clientRepository;
 
     // --- 🔹 CRUD básico ---
     public List<Payment> findAll() {
@@ -39,43 +34,16 @@ public class PaymentService {
         return paymentRepository.findById(id);
     }
 
-    public Payment save(Payment payment) {
-        return paymentRepository.save(payment);
-    }
-
     /**
-     * [MEJORA JUNIOR] Sobrecarga de guardado que acepta un DTO de pago.
-     * Resuelve el cliente asociado mediante su DNI y convierte el DTO a entidad de dominio.
+     * [MEJORA JUNIOR] Registra un pago en la base de datos.
+     * Si no se especificó un plan de forma explícita en el pago, se congela el 'currentPlan' actual
+     * del socio como la versión histórica cobrada en esta transacción.
      */
-    public void save(PaymentDTO paymentDTO) {
-        Client client = clientRepository.findById(paymentDTO.getDocumentId())
-                .orElseThrow(() -> new IllegalArgumentException("No se encontró un cliente con DNI " + paymentDTO.getDocumentId()));
-
-        Payment payment;
-        if (paymentDTO.getIdPayment() != null) {
-            payment = paymentRepository.findById(paymentDTO.getIdPayment())
-                    .orElseThrow(() -> new IllegalArgumentException("No se encontró el pago a modificar."));
-            payment.setPeriod(paymentDTO.getPeriod());
-            payment.setPaymentDate(paymentDTO.getPaymentDate());
-            payment.setBaseAmount(paymentDTO.getBaseAmount());
-            payment.setDiscountApplied(paymentDTO.getDiscountApplied());
-            payment.setFinalAmount(paymentDTO.getFinalAmount());
-            payment.setPaymentMethod(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod.valueOf(paymentDTO.getPaymentMethod()));
-            payment.setPaymentStatus(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus.valueOf(paymentDTO.getPaymentStatus()));
-            payment.setClient(client);
-        } else {
-            payment = Payment.builder()
-                    .period(paymentDTO.getPeriod())
-                    .paymentDate(paymentDTO.getPaymentDate())
-                    .baseAmount(paymentDTO.getBaseAmount())
-                    .discountApplied(paymentDTO.getDiscountApplied())
-                    .finalAmount(paymentDTO.getFinalAmount())
-                    .paymentMethod(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentMethod.valueOf(paymentDTO.getPaymentMethod()))
-                    .paymentStatus(com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.model.enums.PaymentStatus.valueOf(paymentDTO.getPaymentStatus()))
-                    .client(client)
-                    .build();
+    public Payment save(Payment payment) {
+        if (payment.getPlan() == null && payment.getClient() != null) {
+            payment.setPlan(payment.getClient().getCurrentPlan());
         }
-        paymentRepository.save(payment);
+        return paymentRepository.save(payment);
     }
 
     // --- Consultas comunes ---
@@ -114,8 +82,7 @@ public class PaymentService {
      */
     public void markOverduePayments(LocalDate today) {
         // [MEJORA JUNIOR] En lugar de obtener todos los pagos pendientes y recorrerlos
-        // en un bucle for() (lo que genera una consulta SELECT y múltiples UPDATE por
-        // cada pago),
+        // en un bucle for() (lo que genera una consulta SELECT y múltiples UPDATE por cada pago),
         // llamamos a la query masiva que actualiza todo directamente en la base de
         // datos de una vez (Bulk Update). Esto reduce el tráfico de red e I/O en BD.
         paymentRepository.markOverduePaymentsBulk(today);

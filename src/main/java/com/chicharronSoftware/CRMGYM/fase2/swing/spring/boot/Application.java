@@ -15,12 +15,9 @@ import javax.swing.JOptionPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.cache.annotation.EnableCaching;
-
 // [MEJORA JUNIOR] Con @EnableScheduling activamos el soporte para tareas
 // programadas (@Scheduled) en toda la aplicación de Spring Boot.
 @EnableScheduling
-@EnableCaching
 @SpringBootApplication
 public class Application {
 

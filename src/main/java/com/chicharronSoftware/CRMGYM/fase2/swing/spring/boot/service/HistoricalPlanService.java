@@ -77,12 +77,26 @@ public class HistoricalPlanService {
     }
 
     /**
-     * [MEJORA JUNIOR] Devuelve el historial de un socio específico por DNI.
+     * [MEJORA JUNIOR] Devuelve el historial de un socio específico por DNI (Integer).
      */
-    public List<HistoricalPlanDTO> findByClientWithDetails(String documentId) {
+    public List<HistoricalPlanDTO> findByClientWithDetails(Integer documentId) {
         return historicalPlanRepository.findByClientWithDetails(documentId)
                 .stream()
                 .map(HistoricalPlanMapper::toDTO)
                 .toList();
+    }
+
+    /**
+     * [MEJORA JUNIOR] Sobrecarga utilitaria para consultar por DNI en formato texto.
+     */
+    public List<HistoricalPlanDTO> findByClientWithDetails(String documentId) {
+        if (documentId == null || documentId.trim().isEmpty()) {
+            return List.of();
+        }
+        try {
+            return findByClientWithDetails(Integer.parseInt(documentId.trim()));
+        } catch (NumberFormatException e) {
+            return List.of();
+        }
     }
 }

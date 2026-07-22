@@ -8,39 +8,41 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * [MEJORA JUNIOR] Repositorio Spring Data JPA para la entidad Payment (Pagos).
+ * 
+ * Optimización N+1:
+ * - Sobrescribimos y anotamos las consultas con @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
+ *   para forzar un LEFT JOIN unificado en la consulta base. Esto nos trae al cliente, su plan actual y el plan específico abonado
+ *   en un solo viaje a la base de datos, previniendo decenas de consultas secundarias (patrón N+1).
+ */
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-    // [MEJORA JUNIOR] Sobrescribimos findAll para traer los objetos "client" y su "currentPlan"
-    // en una sola consulta JOIN. Esto evita que Hibernate intente buscarlos de forma perezosa (LAZY)
-    // fuera de la transacción, previniendo el error LazyInitializationException.
     @Override
-    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
+    @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
     List<Payment> findAll();
 
-    // Buscar pagos de un cliente por DNI
-    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
+    @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
     List<Payment> findByClient_DocumentId(int documentId);
 
-    // Buscar pagos por estado (ejemplo: PENDING, COMPLETED, OVERDUE)
-    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
+    @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
     List<Payment> findByPaymentStatus(PaymentStatus paymentStatus);
 
-    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
+    @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
     List<Payment> findByClient_DocumentIdOrderByPaymentDateDesc(Integer clientId);
 
-    @EntityGraph(attributePaths = {"client", "client.currentPlan"})
+    @EntityGraph(attributePaths = {"client", "client.currentPlan", "plan"})
     Optional<Payment> findTopByClient_DocumentIdOrderByPaymentDateDesc(Integer clientId);
 
-    // [MEJORA JUNIOR] Actualización masiva (bulk update).
-    // Con @Modifying indicamos que esta query modificará datos. 
-    // Usamos JPQL para actualizar todos los pagos pendientes y vencidos en una sola consulta
-    // en vez de traerlos a memoria e iterar sobre ellos para guardarlos uno a uno.
+    /**
+     * [MEJORA JUNIOR] Actualización masiva en lote (Bulk Update).
+     * Modifica el estado de los pagos vencidos directamente en el motor SQL sin cargarlos en memoria.
+     */
     @Modifying
     @Query("UPDATE Payment p SET p.paymentStatus = 'VENCIDO' WHERE p.paymentStatus = 'PENDIENTE' AND p.period < :today")
     int markOverduePaymentsBulk(LocalDate today);

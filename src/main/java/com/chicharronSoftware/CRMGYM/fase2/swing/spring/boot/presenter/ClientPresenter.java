@@ -95,22 +95,16 @@ public class ClientPresenter {
                         throw new IllegalArgumentException("El número de celular ingresado no es válido.");
                     }
 
-                    ClientDTO clientDto = ClientDTO.builder()
-                            .documentId(dni)
-                            .name(name)
-                            .lastName(lastName)
-                            .email(email)
-                            .phoneNumber(phone)
-                            .status(view.isEditMode() ? "Activo" : "Activo") // O pasarlo dinámicamente si hay combo
-                            .namePlan(selectedPlanName)
-                            .build();
+                    Plan plan = planService.findByNamePlanIgnoreCase(selectedPlanName)
+                            .orElseThrow(() -> new IllegalArgumentException("No se encontró el plan seleccionado."));
 
-                    clientService.save(clientDto);
-                    return clientDto;
+                    Client client = new Client(dni, name, lastName, email, phone, true, plan);
+                    clientService.save(client);
+                    return client;
                 },
-                new AsyncDataLoader.DataLoadCallback<ClientDTO>() {
+                new AsyncDataLoader.DataLoadCallback<Client>() {
                     @Override
-                    public void onSuccess(ClientDTO savedClient) {
+                    public void onSuccess(Client savedClient) {
                         view.getBtnSave().setEnabled(true);
                         String msg = view.isEditMode() ? "Cliente actualizado correctamente." : "Cliente guardado correctamente.";
                         view.showSuccess(msg, "Éxito");
@@ -201,8 +195,14 @@ public class ClientPresenter {
 
         AsyncDataLoader.loadData(
             () -> {
-                clientService.changeStatus(dni, status);
-                return true;
+                Optional<Client> clientOpt = clientService.findById(dni);
+                if (clientOpt.isPresent()) {
+                    Client client = clientOpt.get();
+                    client.setIsActive(status);
+                    clientService.save(client);
+                    return true;
+                }
+                return false;
             },
             new AsyncDataLoader.DataLoadCallback<Boolean>() {
                 @Override
