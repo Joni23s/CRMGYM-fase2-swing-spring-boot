@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class PaymentPresenter {
+public class PaymentPresenter extends BasePresenter {
 
     private final PaymentPanel view;
     private final PaymentService paymentService;

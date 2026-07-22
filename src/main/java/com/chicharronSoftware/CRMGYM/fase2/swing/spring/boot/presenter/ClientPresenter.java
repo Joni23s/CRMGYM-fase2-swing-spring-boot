@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
-public class ClientPresenter {
+public class ClientPresenter extends BasePresenter {
 
     private final ClientPanel view;
     private final ClientService clientService;
@@ -75,8 +75,6 @@ public class ClientPresenter {
 
             int dni = Integer.parseInt(dniText);
 
-            view.getBtnSave().setEnabled(false);
-
             final ClientDTO clientDTO = ClientDTO.builder()
                     .documentId(dni)
                     .name(name)
@@ -87,9 +85,7 @@ public class ClientPresenter {
                     .namePlan(selectedPlanName)
                     .build();
 
-            view.getBtnSave().setEnabled(false);
-
-            AsyncDataLoader.loadData(
+            executeAsync(
                 () -> {
                     if (!view.isEditMode() && !clientValidation.isDniAvailable(dni)) {
                         throw new IllegalArgumentException("Ya existe un cliente con DNI: " + dni + "\nIntente con un DNI diferente.");
@@ -106,26 +102,13 @@ public class ClientPresenter {
 
                     return clientService.saveDTO(clientDTO);
                 },
-                new AsyncDataLoader.DataLoadCallback<ClientDTO>() {
-                    @Override
-                    public void onSuccess(ClientDTO savedClient) {
-                        view.getBtnSave().setEnabled(true);
-                        String msg = view.isEditMode() ? "Cliente actualizado correctamente." : "Cliente guardado correctamente.";
-                        view.showSuccess(msg, "Éxito");
-                        view.resetForm();
-                        loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
-                    }
-
-                    @Override
-                    public void onError(Exception ex) {
-                        view.getBtnSave().setEnabled(true);
-                        if (ex instanceof IllegalArgumentException) {
-                            view.showWarning(ex.getMessage(), "Validación fallida");
-                        } else {
-                            view.showError("Ocurrió un error al guardar el cliente: " + ex.getMessage(), "Error");
-                        }
-                    }
-                }
+                savedClient -> {
+                    String msg = view.isEditMode() ? "Cliente actualizado correctamente." : "Cliente guardado correctamente.";
+                    view.showSuccess(msg, "Éxito");
+                    view.resetForm();
+                    loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
+                },
+                view.getBtnSave()
             );
 
         } catch (NumberFormatException ex) {
@@ -194,32 +177,18 @@ public class ClientPresenter {
 
         int dni = Integer.parseInt(view.getTableListClients().getValueAt(filaSelected, 0).toString());
 
-        view.getBtnActivate().setEnabled(false);
-        view.getBtnDeactivate().setEnabled(false);
-
-        AsyncDataLoader.loadData(
+        executeAsync(
             () -> clientService.changeStatusDTO(dni, status),
-            new AsyncDataLoader.DataLoadCallback<Boolean>() {
-                @Override
-                public void onSuccess(Boolean result) {
-                    view.getBtnActivate().setEnabled(true);
-                    view.getBtnDeactivate().setEnabled(true);
-                    if (result) {
-                        view.showSuccess("Estado actualizado correctamente.", "Éxito");
-                        view.resetForm();
-                        loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
-                    } else {
-                        view.showError("No se encontró el cliente.", "Error");
-                    }
+            result -> {
+                if (result) {
+                    view.showSuccess("Estado actualizado correctamente.", "Éxito");
+                    view.resetForm();
+                    loadClientsToTableAsync(() -> clientService.getAllClientsDTO());
+                } else {
+                    view.showError("No se encontró el cliente.", "Error");
                 }
-
-                @Override
-                public void onError(Exception ex) {
-                    view.getBtnActivate().setEnabled(true);
-                    view.getBtnDeactivate().setEnabled(true);
-                    view.showError("Error al actualizar estado: " + ex.getMessage(), "Error");
-                }
-            }
+            },
+            view.getBtnActivate(), view.getBtnDeactivate()
         );
     }
 
@@ -279,46 +248,26 @@ public class ClientPresenter {
     private void loadPlansToComboBox() {
         view.getComboBoxPlan().removeAllItems();
         view.getComboBoxPlan().addItem("Seleccione un Plan *");
-        view.getComboBoxPlan().setEnabled(false);
-        AsyncDataLoader.loadData(
+        executeAsync(
             () -> planService.findByIsActiveDTO(true),
-            new AsyncDataLoader.DataLoadCallback<List<PlanDTO>>() {
-                @Override
-                public void onSuccess(List<PlanDTO> planes) {
-                    view.getComboBoxPlan().setEnabled(true);
-                    if (planes != null) {
-                        for (PlanDTO plan : planes) {
-                            view.getComboBoxPlan().addItem(plan.toString());
-                        }
+            planes -> {
+                if (planes != null) {
+                    for (PlanDTO plan : planes) {
+                        view.getComboBoxPlan().addItem(plan.toString());
                     }
                 }
-
-                @Override
-                public void onError(Exception ex) {
-                    view.getComboBoxPlan().setEnabled(true);
-                    view.showError("Error al cargar planes: " + ex.getMessage(), "Error");
-                }
-            }
+            },
+            view.getComboBoxPlan()
         );
     }
 
     private void loadClientsToTableAsync(java.util.concurrent.Callable<List<ClientDTO>> loader) {
         view.showLoadingTable();
-        
-        AsyncDataLoader.loadData(
+        executeAsync(
             loader,
-            new AsyncDataLoader.DataLoadCallback<List<ClientDTO>>() {
-                @Override
-                public void onSuccess(List<ClientDTO> clients) {
-                    view.updateTable(clients);
-                    view.enableButtons(true);
-                }
-
-                @Override
-                public void onError(Exception ex) {
-                    view.enableButtons(true);
-                    view.showError("Error cargando clientes: " + ex.getMessage(), "Error");
-                }
+            clients -> {
+                view.updateTable(clients);
+                view.enableButtons(true);
             }
         );
     }

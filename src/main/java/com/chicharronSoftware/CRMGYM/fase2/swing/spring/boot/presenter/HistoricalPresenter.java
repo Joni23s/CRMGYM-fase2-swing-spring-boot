@@ -21,7 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Component
-public class HistoricalPresenter {
+public class HistoricalPresenter extends BasePresenter {
 
     private final HistoricalPanel view;
     private final ClientService clientService;

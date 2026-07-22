@@ -355,6 +355,42 @@ public class ClientPanel extends JPanel implements Scrollable {
     }
 
     // Getters y Setters
+    /**
+     * [MEJORA JUNIOR] Encapsulamiento: Extrae los datos ingresados en el formulario visual a un ClientDTO.
+     */
+    public ClientDTO getFormData() {
+        int dni = 0;
+        try {
+            dni = Integer.parseInt(txtDni.getText().trim());
+        } catch (NumberFormatException ignored) {}
+        String phoneText = txtPhone.getText().trim();
+
+        return ClientDTO.builder()
+                .documentId(dni)
+                .name(txtName.getText().trim())
+                .lastName(txtLastName.getText().trim())
+                .email(txtMail.getText().trim())
+                .phoneNumber(phoneText.isEmpty() ? null : phoneText)
+                .status("Activo")
+                .namePlan(comboBoxPlan.getSelectedItem() != null ? comboBoxPlan.getSelectedItem().toString() : "")
+                .build();
+    }
+
+    /**
+     * [MEJORA JUNIOR] Encapsulamiento: Pobla el formulario visual a partir de los datos de un ClientDTO.
+     */
+    public void setFormData(ClientDTO dto) {
+        if (dto == null) return;
+        txtDni.setText(dto.getDocumentId() != 0 ? String.valueOf(dto.getDocumentId()) : "");
+        txtName.setText(dto.getName() != null ? dto.getName() : "");
+        txtLastName.setText(dto.getLastName() != null ? dto.getLastName() : "");
+        txtPhone.setText(dto.getPhoneNumber() != null ? dto.getPhoneNumber() : "");
+        txtMail.setText(dto.getEmail() != null ? dto.getEmail() : "");
+        if (dto.getNamePlan() != null) {
+            comboBoxPlan.setSelectedItem(dto.getNamePlan());
+        }
+    }
+
     public JTextField getTxtDni() { return txtDni; }
     public JTextField getTxtName() { return txtName; }
     public JTextField getTxtLastName() { return txtLastName; }
