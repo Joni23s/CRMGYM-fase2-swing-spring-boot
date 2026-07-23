@@ -5,6 +5,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.VectorIcon;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.ButtonFactory;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.CardFactory;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.components.StatusBadgeRenderer;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
 
 import net.miginfocom.swing.MigLayout;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,8 +69,8 @@ public class ClientPanel extends JPanel implements Scrollable {
         JPanel formCard = CardFactory.createCardPanel(new MigLayout("wrap 1, ins 18 22 18 22, fillx", "[grow, fill]", "[]12[]"));
         
         titleCharge = new JLabel("Nuevo Cliente");
-        titleCharge.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        titleCharge.setForeground(Color.decode("#f8fafc"));
+        titleCharge.setFont(new Font("Oswald", Font.BOLD, 16));
+        titleCharge.setForeground(Theme.BTN_PRIMARY_BG);
         formCard.add(titleCharge, "gapbottom 8, alignx left");
 
         formCard.add(createFieldLabel("Nombre *"));
@@ -121,28 +122,14 @@ public class ClientPanel extends JPanel implements Scrollable {
         // =========================================================================
         // 2. TARJETA DEL LISTADO (COLUMNA DERECHA)
         // =========================================================================
-        JPanel listCard = new JPanel(new MigLayout("wrap 1, ins 18 22 18 22, fill", "[grow, fill]", "[]15[grow, fill]12[]")) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(Color.decode("#1e293b")); 
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-                g2d.setColor(Color.decode("#334155")); 
-                g2d.setStroke(new BasicStroke(1.2f));
-                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
-                g2d.dispose();
-                super.paintComponent(g);
-            }
-        };
-        listCard.setOpaque(false);
+        JPanel listCard = CardFactory.createCardPanel(new MigLayout("wrap 1, ins 18 22 18 22, fill", "[grow, fill]", "[]15[grow, fill]12[]"));
         
         JPanel listHeader = new JPanel(new MigLayout("ins 0, fillx", "[grow][]", "[]"));
         listHeader.setOpaque(false);
         
         titleList = new JLabel("Lista de Clientes");
-        titleList.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        titleList.setForeground(Color.decode("#f8fafc"));
+        titleList.setFont(new Font("Oswald", Font.BOLD, 16));
+        titleList.setForeground(Theme.BTN_PRIMARY_BG);
         listHeader.add(titleList, "cell 0 0, alignx left, aligny center");
         
         JPanel filterPanel = new JPanel(new MigLayout("ins 0, gapx 8", "[][][]"));
@@ -165,14 +152,14 @@ public class ClientPanel extends JPanel implements Scrollable {
         tableListClients.setRowHeight(38);
         tableListClients.setFillsViewportHeight(true);
         
-        tableListClients.setBackground(Color.decode("#1e293b"));
-        tableListClients.setForeground(Color.decode("#f8fafc"));
-        tableListClients.setSelectionBackground(Color.decode("#334155"));
-        tableListClients.setSelectionForeground(Color.decode("#f8fafc"));
+        tableListClients.setBackground(Theme.CARD_BG);
+        tableListClients.setForeground(Theme.TEXT_ACTIVE);
+        tableListClients.setSelectionBackground(Theme.CARD_BG_ALT);
+        tableListClients.setSelectionForeground(Theme.TEXT_ACTIVE);
         
         JScrollPane scrollPaneTable = new JScrollPane(tableListClients);
-        scrollPaneTable.setBorder(BorderFactory.createLineBorder(Color.decode("#334155"), 1, true));
-        scrollPaneTable.getViewport().setBackground(Color.decode("#1e293b"));
+        scrollPaneTable.setBorder(BorderFactory.createLineBorder(Theme.BORDER_SLATE, 1, false));
+        scrollPaneTable.getViewport().setBackground(Theme.CARD_BG);
         listCard.add(scrollPaneTable, "grow");
         
         JPanel rowActionsBar = new JPanel(new MigLayout("ins 0, gapx 12, alignx right"));
@@ -224,8 +211,8 @@ public class ClientPanel extends JPanel implements Scrollable {
 
     private JLabel createFieldLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        label.setForeground(Color.decode("#94a3b8"));
+        label.setFont(new Font("Oswald", Font.BOLD, 12));
+        label.setForeground(Theme.TEXT_INACTIVE);
         return label;
     }
 
@@ -248,11 +235,11 @@ public class ClientPanel extends JPanel implements Scrollable {
             public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
                                                            boolean isSelected, boolean hasFocus, int row, int column) {
                 super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                setFont(new Font("Segoe UI", Font.BOLD, 12));
-                setForeground(Color.decode("#94a3b8"));
-                setBackground(Color.decode("#0f172a"));
+                setFont(new Font("Oswald", Font.BOLD, 12));
+                setForeground(Theme.TEXT_ACTIVE);
+                setBackground(Theme.BG_DARK);
                 setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 1, 0, Color.decode("#334155")),
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.BORDER_SLATE),
                         BorderFactory.createEmptyBorder(0, 15, 0, 15)
                 ));
                 setHorizontalAlignment(column == 5 ? JLabel.CENTER : JLabel.LEFT);
@@ -272,9 +259,9 @@ public class ClientPanel extends JPanel implements Scrollable {
             public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
                                                            boolean isSelected, boolean hasFocus, int row, int column) {
                 super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                setFont(new Font("Segoe UI", Font.PLAIN, 13));
-                setForeground(Color.decode("#f8fafc"));
-                setBackground((row % 2 == 0) ? Color.decode("#1e293b") : Color.decode("#151f32"));
+                setFont(new Font("Courier Prime", Font.PLAIN, 13));
+                setForeground(Theme.TEXT_ACTIVE);
+                setBackground((row % 2 == 0) ? Theme.CARD_BG : Theme.CARD_BG_ALT);
                 setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
                 return this;
             }
