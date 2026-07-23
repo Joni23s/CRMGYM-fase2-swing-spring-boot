@@ -59,7 +59,8 @@ public class ClientPanel extends JPanel implements Scrollable {
     }
 
     private void initComponentsHandCoded() {
-        setOpaque(false); 
+        setOpaque(true); 
+        setBackground(Theme.BG_DARK);
         
         setLayout(new MigLayout("ins 20 30 20 30, gapx 25, fill", "[340px!, fill][grow, fill]", "[grow, fill]"));
         

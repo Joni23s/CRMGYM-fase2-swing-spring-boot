@@ -12,6 +12,7 @@ import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.Client
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.HistoricalPanel;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.PaymentPanel;
 import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.panels.PlansPanel;
+import com.chicharronSoftware.CRMGYM.fase2.swing.spring.boot.views.theme.Theme;
 
 import net.miginfocom.swing.MigLayout;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,7 +100,7 @@ public class MainFrame extends JFrame {
         // Fila 1 expansiva, Fila 2 fija de 30px.
         JPanel rootPanel = new JPanel(
                 new MigLayout("fill, ins 0, gap 0", "[220px!]0[grow, fill]", "[grow, fill]0[30px!]"));
-        rootPanel.setBackground(Color.decode("#0b0f19")); // Fondo general ultra oscuro
+        rootPanel.setBackground(Theme.BG_DARK); // Fondo general vintage parchment
         setContentPane(rootPanel);
 
         // --- 1. Menú Lateral (SidebarPanel) ---
@@ -132,7 +133,7 @@ public class MainFrame extends JFrame {
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollWrapper.setBorder(BorderFactory.createEmptyBorder());
-        scrollWrapper.getViewport().setBackground(Color.decode("#0b0f19"));
+        scrollWrapper.getViewport().setBackground(Theme.BG_DARK);
         scrollWrapper.getVerticalScrollBar().setUnitIncrement(16);
 
         centerArea.add(scrollWrapper, "grow");
@@ -147,7 +148,13 @@ public class MainFrame extends JFrame {
      */
     public void showPanel(JPanel panel) {
         centerArea.removeAll();
-        centerArea.add(panel, "grow");
+        JScrollPane scrollWrapper = new JScrollPane(panel,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollWrapper.setBorder(BorderFactory.createEmptyBorder());
+        scrollWrapper.getViewport().setBackground(Theme.BG_DARK);
+        scrollWrapper.getVerticalScrollBar().setUnitIncrement(16);
+        centerArea.add(scrollWrapper, "grow");
         centerArea.revalidate();
         centerArea.repaint();
     }
